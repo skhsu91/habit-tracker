@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HabitAPI, APIError } from '../services/api';
 import { HabitEvent, HabitsTabData } from '../types/habit';
+import { UMBRELLA_TAGS, APPROVED_TAGS, CONTEXTUAL_TAGS } from '../types/tags';
 import { format, parseISO } from 'date-fns';
 
 const MasterListView: React.FC = () => {
@@ -340,42 +341,85 @@ const MasterListView: React.FC = () => {
                     <div className="mt-2 pt-2">
                       <div className="flex flex-wrap gap-4">
                         {habit.categories.map((category, index) => {
-                        // Create consistent category-specific colors based on category names
-                        // This ensures the same category always gets the same color everywhere in the app
-                        // Categories are mapped to meaningful colors (e.g., workout = red/orange, food = yellow/orange)
-                        const getCategoryColor = (categoryName: string): string => {
-                          const categoryColorMap: { [key: string]: string } = {
-                            'workout': 'from-red-500 to-orange-500',
-                            'exercise': 'from-red-500 to-orange-500', 
-                            'self-care': 'from-green-500 to-emerald-500',
-                            'food': 'from-yellow-500 to-orange-500',
-                            'takeout': 'from-orange-500 to-red-500',
-                            'public-transportation': 'from-blue-500 to-indigo-500',
-                            'lifestyle': 'from-purple-500 to-pink-500',
-                            'transportation': 'from-blue-500 to-indigo-500',
-                            'health': 'from-green-500 to-teal-500',
-                            'work': 'from-gray-500 to-slate-500',
-                            'social': 'from-pink-500 to-purple-500',
-                            'learning': 'from-blue-500 to-cyan-500',
-                            'entertainment': 'from-purple-500 to-violet-500',
-                            'default': 'from-gray-500 to-gray-600'
+                        // PRD-compliant tag color system based on hierarchy
+                        // Umbrella tags (blue) → Specific tags (green) → Contextual tags (purple)
+                        const getCategoryColor = (tagName: string): string => {
+                          // Check if it's an umbrella tag
+                          if (UMBRELLA_TAGS.includes(tagName as any)) {
+                            const umbrellaColors: { [key: string]: string } = {
+                              'health': 'from-blue-500 to-blue-600',
+                              'food': 'from-yellow-500 to-orange-500', 
+                              'home': 'from-indigo-500 to-indigo-600',
+                              'transportation': 'from-cyan-500 to-cyan-600'
+                            };
+                            return umbrellaColors[tagName] || 'from-blue-500 to-blue-600';
+                          }
+                          
+                          // Check if it's a contextual tag  
+                          if (CONTEXTUAL_TAGS.includes(tagName as any)) {
+                            return 'from-purple-500 to-purple-600';
+                          }
+                          
+                          // Specific tags - color by umbrella category
+                          const specificTagColors: { [key: string]: string } = {
+                            // Health specific tags
+                            'exercise': 'from-green-500 to-green-600',
+                            'workout': 'from-emerald-500 to-emerald-600',
+                            
+                            // Food specific tags  
+                            'cooking': 'from-orange-500 to-red-500',
+                            'meal-prep': 'from-yellow-600 to-orange-600',
+                            'meal': 'from-amber-500 to-amber-600',
+                            'takeout': 'from-red-500 to-red-600',
+                            'grocery': 'from-yellow-500 to-yellow-600',
+                            
+                            // Home specific tags
+                            'cleaning': 'from-teal-500 to-teal-600',
+                            'laundry': 'from-sky-500 to-sky-600', 
+                            'bathroom': 'from-slate-500 to-slate-600',
+                            
+                            // Transportation specific tags
+                            'public-transit': 'from-blue-600 to-indigo-600',
+                            'walking-errand': 'from-green-600 to-teal-600',
+                            'rideshare': 'from-gray-500 to-gray-600',
+                            
+                            // Legacy/extensibility tags
+                            'learning': 'from-violet-500 to-violet-600',
+                            'career-development': 'from-indigo-600 to-purple-600'
                           };
                           
-                          return categoryColorMap[categoryName.toLowerCase()] || categoryColorMap['default'];
+                          return specificTagColors[tagName] || 'from-gray-500 to-gray-600';
                         };
                         
+                        // Get tag type for hierarchy display
+                        const getTagType = (tagName: string): { type: string; icon: string } => {
+                          if (UMBRELLA_TAGS.includes(tagName as any)) {
+                            return { type: 'umbrella', icon: '🏷️' };
+                          }
+                          if (CONTEXTUAL_TAGS.includes(tagName as any)) {
+                            return { type: 'contextual', icon: '🔗' };
+                          }
+                          return { type: 'specific', icon: '📍' };
+                        };
+
+                        const tagInfo = getTagType(category);
+
                         return (
                           <span
                             key={`${habit.id}-${category}`}
                             onClick={() => handleCategoryTagClick(category)}
-                            className={`inline-flex items-center px-2.5 py-1 mx-1 my-1 rounded-full text-xs font-semibold bg-gradient-to-r ${getCategoryColor(category)} text-white shadow-sm hover:shadow-lg hover:scale-105 transition-all cursor-pointer transform ${
+                            className={`inline-flex items-center px-3 py-1.5 mx-1 my-1 rounded-full text-xs font-semibold bg-gradient-to-r ${getCategoryColor(category)} text-white shadow-sm hover:shadow-lg hover:scale-105 transition-all cursor-pointer transform ${
                               selectedCategory === category ? 'ring-2 ring-white ring-opacity-60 shadow-lg scale-105' : ''
                             }`}
-                            title={`${selectedCategory === category ? 'Clear filter' : 'Filter by'} ${category}`}
+                            title={`${selectedCategory === category ? 'Clear filter' : 'Filter by'} ${category} (${tagInfo.type} tag)`}
                           >
                             {/* Consistent icon sizing - exactly 12px x 12px */}
-                            <TagIcon className="h-3 w-3 mr-1 flex-shrink-0" style={{ width: '12px', height: '12px' }} />
+                            <TagIcon className="h-3 w-3 mr-1.5 flex-shrink-0" style={{ width: '12px', height: '12px' }} />
                             <span className="capitalize">{category}</span>
+                            {/* Show tag type indicator */}
+                            <span className="ml-1.5 text-xs opacity-75 font-normal">
+                              ({tagInfo.type.charAt(0)})
+                            </span>
                           </span>
                         );
                         })}

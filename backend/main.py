@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 from data_sources.manager import DataSourceManager
 from data_sources.base import HabitEvent
 
+# Import tag validation utilities
+from utils.tag_validation import TagValidator, TagValidationResult, validate_tags, suggest_tags
+
 # Load environment variables
 load_dotenv()
 
@@ -363,6 +366,71 @@ async def get_analytics_tab_data(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching analytics tab data: {str(e)}")
+
+# Tag Validation and Management Endpoints
+@app.post("/api/tags/validate")
+async def validate_habit_tags(tags: List[str]):
+    """
+    Validate tags against PRD requirements
+    Returns validation results with errors, warnings, and suggestions
+    """
+    try:
+        result = validate_tags(tags)
+        return {
+            "is_valid": result.is_valid,
+            "normalized_tags": result.normalized_tags,
+            "errors": result.errors,
+            "warnings": result.warnings,
+            "suggestions": result.suggestions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error validating tags: {str(e)}")
+
+@app.get("/api/tags/suggest")
+async def suggest_tags_for_habit(
+    habit_name: str = Query(..., description="Habit name to suggest tags for"),
+    limit: int = Query(5, ge=1, le=20, description="Maximum number of tag suggestions")
+):
+    """
+    Get tag suggestions based on habit name
+    Uses keyword matching to suggest appropriate tags from the approved set
+    """
+    try:
+        suggestions = suggest_tags(habit_name, limit)
+        return {
+            "habit_name": habit_name,
+            "suggested_tags": suggestions,
+            "validation_rules": {
+                "requires_umbrella_tag": True,
+                "must_be_kebab_case": True,
+                "approved_umbrellas": ["health", "food", "home", "transportation"]
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error suggesting tags: {str(e)}")
+
+@app.get("/api/tags/approved")
+async def get_approved_tags():
+    """
+    Get the complete approved tag set organized by hierarchy
+    Useful for building tag auto-complete and validation UIs
+    """
+    try:
+        from utils.tag_validation import APPROVED_TAGS, UMBRELLA_TAGS, TAG_HIERARCHY, CONTEXTUAL_TAGS
+        
+        return {
+            "umbrella_tags": list(UMBRELLA_TAGS),
+            "all_approved_tags": list(APPROVED_TAGS),
+            "tag_hierarchy": TAG_HIERARCHY,
+            "contextual_tags": list(CONTEXTUAL_TAGS),
+            "format_requirements": {
+                "case_format": "kebab-case",
+                "requires_umbrella": True,
+                "allows_multiple_umbrellas": True
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching approved tags: {str(e)}")
 
 # Google Calendar Authentication Endpoints
 @app.get("/api/calendar/auth-status")
