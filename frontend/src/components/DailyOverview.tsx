@@ -4,10 +4,13 @@ import {
   CalendarIcon, 
   TrophyIcon, 
   ArrowTrendingUpIcon,
-  ExclamationCircleIcon 
+  ExclamationCircleIcon,
+  UserGroupIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 import { HabitAPI, APIError } from '../services/api';
 import { OverviewTabData, HabitEvent } from '../types/habit';
+import { UMBRELLA_TAGS, CONTEXTUAL_TAGS } from '../types/tags';
 import { format, parseISO } from 'date-fns';
 
 const DailyOverview: React.FC = () => {
@@ -52,6 +55,51 @@ const DailyOverview: React.FC = () => {
       return format(parseISO(dateString), 'HH:mm');
     } catch {
       return '--:--';
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    try {
+      // parseISO respects the timezone info in the ISO string from Google Sheets
+      const eventDate = parseISO(dateString);
+      const now = new Date();
+      
+      // Calculate difference in days at midnight boundary for accurate day comparison
+      // Using the event's actual timezone, not converting to user's timezone
+      const dateAtMidnight = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+      const nowAtMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const diffInDays = Math.floor((nowAtMidnight.getTime() - dateAtMidnight.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Format time exactly as it was recorded in the original event timezone
+      const timeFormat = format(eventDate, 'h:mmaa').toLowerCase();
+      
+      if (diffInDays === 0) return `Today - ${timeFormat}`;
+      if (diffInDays === 1) return `Yesterday - ${timeFormat}`;
+      
+      // For dates beyond yesterday, show full date format with original event time
+      return `${format(eventDate, 'EEEE, MMM d, yyyy')} - ${timeFormat}`;
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const getDateColor = (dateString: string): string => {
+    try {
+      // Use the event's original timezone, same as formatDate function
+      const eventDate = parseISO(dateString);
+      const now = new Date();
+      
+      // Use same day calculation logic as formatDate for consistency
+      const dateAtMidnight = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+      const nowAtMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const diffInDays = Math.floor((nowAtMidnight.getTime() - dateAtMidnight.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffInDays === 0) return 'text-accent-green'; // Today
+      if (diffInDays === 1) return 'text-accent-blue'; // Yesterday
+      if (diffInDays <= 7) return 'text-accent-yellow'; // This week
+      return 'text-muted'; // Older
+    } catch {
+      return 'text-muted';
     }
   };
 
@@ -201,32 +249,122 @@ const DailyOverview: React.FC = () => {
         {recent_events.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No recent events found</p>
         ) : (
-          <div className="space-y-3">
-            {recent_events.slice(0, 5).map((event: HabitEvent) => (
-              <div key={event.id} className="event-card">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{event.name}</h4>
-                  <div className="flex items-center mt-2 space-x-4">
-                    <span className="text-sm text-gray-500">
-                      {getTimeFromDate(event.date)}
-                    </span>
-                    <span className="text-sm text-blue-400">
-                      {formatDuration(event.duration)}
-                    </span>
+          <div className="space-y-4">
+            {recent_events.slice(0, 5).map((event: HabitEvent, index) => (
+              <div 
+                key={event.id} 
+                className="event-card hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.01] group animate-fade-in"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  '--tw-animate-duration': '400ms'
+                } as React.CSSProperties}
+              >
+                {/* Much more useful and organized layout */}
+                <div className="flex items-start justify-between">
+                  {/* Left side: Main habit info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-3">
+                      {/* Habit Name with better typography */}
+                      <h3 className="text-lg font-bold gradient-text truncate group-hover:text-accent-blue transition-colors">
+                        {event.name}
+                      </h3>
+                      {/* Quick visual indicator for habit duration */}
+                      <div className="ml-4 text-right">
+                        <div className="text-sm text-accent-green font-bold">{formatDuration(event.duration)}</div>
+                        <div className="text-xs text-muted">duration</div>
+                      </div>
+                    </div>
+                    
+                    {/* Key details in a clean, scannable format */}
+                    <div className="flex items-center gap-4 text-sm text-secondary mb-3">
+                      {/* Date with better formatting and color coding */}
+                      <div className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${getDateColor(event.date).replace('text-', 'bg-')}`}></div>
+                        <span className={`font-medium ${getDateColor(event.date)}`}>{formatDate(event.date)}</span>
+                      </div>
+
+                      {/* Data source indicator (useful for debugging/transparency) */}
+                      {event.source && (
+                        <div className="ml-auto">
+                          <span className="text-xs bg-accent px-2 py-1 rounded text-primary font-medium opacity-75">
+                            📊 {event.source.replace('_', ' ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Categories with consistent sizing and predictable colors */}
                     {event.categories.length > 0 && (
-                      <span className="text-sm text-purple-400">
-                        {event.categories.join(', ')}
-                      </span>
+                      <div className="mt-2 pt-2">
+                        <div className="flex flex-wrap gap-4">
+                          {event.categories.map((category, index) => {
+                            // PRD-compliant tag color system based on hierarchy
+                            // Umbrella tags (blue) → Specific tags (green) → Contextual tags (purple)
+                            const getCategoryColor = (tagName: string): string => {
+                              // Check if it's an umbrella tag
+                              if (UMBRELLA_TAGS.includes(tagName as any)) {
+                                const umbrellaColors: { [key: string]: string } = {
+                                  'health': 'from-blue-500 to-blue-600',
+                                  'food': 'from-yellow-500 to-orange-500', 
+                                  'home': 'from-indigo-500 to-indigo-600',
+                                  'transportation': 'from-cyan-500 to-cyan-600'
+                                };
+                                return umbrellaColors[tagName] || 'from-blue-500 to-blue-600';
+                              }
+                              
+                              // Check if it's a contextual tag  
+                              if (CONTEXTUAL_TAGS.includes(tagName as any)) {
+                                return 'from-purple-500 to-purple-600';
+                              }
+                              
+                              // Specific tags - color by umbrella category
+                              const specificTagColors: { [key: string]: string } = {
+                                // Health specific tags
+                                'exercise': 'from-green-500 to-green-600',
+                                'workout': 'from-emerald-500 to-emerald-600',
+                                
+                                // Food specific tags  
+                                'cooking': 'from-orange-500 to-red-500',
+                                'meal-prep': 'from-yellow-600 to-orange-600',
+                                'meal': 'from-amber-500 to-amber-600',
+                                'takeout': 'from-red-500 to-red-600',
+                                'grocery': 'from-yellow-500 to-yellow-600',
+                                
+                                // Home specific tags
+                                'cleaning': 'from-teal-500 to-teal-600',
+                                'laundry': 'from-sky-500 to-sky-600', 
+                                'bathroom': 'from-slate-500 to-slate-600',
+                                
+                                // Transportation specific tags
+                                'public-transit': 'from-blue-600 to-indigo-600',
+                                'walking-errand': 'from-green-600 to-teal-600',
+                                'rideshare': 'from-gray-500 to-gray-600',
+                                
+                                // Legacy/extensibility tags
+                                'learning': 'from-violet-500 to-violet-600',
+                                'career-development': 'from-indigo-600 to-purple-600'
+                              };
+                              
+                              return specificTagColors[tagName] || 'from-gray-500 to-gray-600';
+                            };
+
+                            return (
+                              <span
+                                key={`${event.id}-${category}`}
+                                className={`inline-flex items-center px-3 py-1.5 mx-1 my-1 rounded-full text-xs font-semibold bg-gradient-to-r ${getCategoryColor(category)} text-white shadow-sm hover:shadow-lg hover:scale-105 transition-all cursor-pointer transform`}
+                                title={`${category} tag`}
+                              >
+                                {/* Consistent icon sizing - exactly 12px x 12px */}
+                                <TagIcon className="h-3 w-3 mr-1.5 flex-shrink-0" style={{ width: '12px', height: '12px' }} />
+                                <span className="capitalize">{category}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
-                {event.source && (
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                      {event.source}
-                    </span>
-                  </div>
-                )}
               </div>
             ))}
           </div>
