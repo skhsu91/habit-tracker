@@ -14,7 +14,7 @@ class MockDataSource(DataSource):
                 date="2025-01-14T06:00:00.000Z",
                 participants=None,
                 duration=60,
-                categories=["fitness", "morning"],
+                categories=["health", "exercise", "workout"],
                 source=self.name
             ),
             HabitEvent(
@@ -23,7 +23,7 @@ class MockDataSource(DataSource):
                 date="2025-01-14T10:30:00.000Z",
                 participants=None,
                 duration=45,
-                categories=["food", "errands"],
+                categories=["food", "grocery", "restock"],
                 source=self.name
             ),
             HabitEvent(
@@ -32,16 +32,16 @@ class MockDataSource(DataSource):
                 date="2025-01-14T18:00:00.000Z",
                 participants=["partner"],
                 duration=90,
-                categories=["food", "cooking"],
+                categories=["food", "cooking", "meal"],
                 source=self.name
             ),
             HabitEvent(
                 id="cal_004",
-                name="Interview Study",
+                name="Study Session",
                 date="2025-01-14T20:00:00.000Z",
                 participants=None,
                 duration=120,
-                categories=["career", "learning"],
+                categories=["home", "learning"],  # Using home as umbrella for personal activities until learning umbrella is added
                 source=self.name
             ),
             HabitEvent(
@@ -50,7 +50,7 @@ class MockDataSource(DataSource):
                 date="2025-01-13T19:00:00.000Z",
                 participants=None,
                 duration=30,
-                categories=["fitness", "cardio"],
+                categories=["health", "exercise"],
                 source=self.name
             ),
             HabitEvent(
@@ -59,7 +59,7 @@ class MockDataSource(DataSource):
                 date="2025-01-13T14:00:00.000Z",
                 participants=None,
                 duration=120,
-                categories=["food", "cooking", "prep"],
+                categories=["food", "cooking", "meal-prep", "restock"],
                 source=self.name
             )
         ]

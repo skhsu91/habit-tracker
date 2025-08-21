@@ -178,6 +178,64 @@ export class HabitAPI {
     const response = await api.get('/api/tabs/analytics', { params });
     return response.data;
   }
+
+  // Tag Validation and Management Methods
+
+  /**
+   * Validate tags against PRD requirements
+   * @param tags - Array of tags to validate
+   * Returns: Validation result with errors, warnings, and suggestions
+   */
+  static async validateTags(tags: string[]): Promise<{
+    is_valid: boolean;
+    normalized_tags: string[];
+    errors: string[];
+    warnings: string[];
+    suggestions: string[];
+  }> {
+    const response = await api.post('/api/tags/validate', tags);
+    return response.data;
+  }
+
+  /**
+   * Get tag suggestions based on habit name
+   * @param habitName - Name of the habit to suggest tags for
+   * @param limit - Maximum number of suggestions (default 5)
+   * Returns: Tag suggestions with validation rules
+   */
+  static async suggestTags(habitName: string, limit: number = 5): Promise<{
+    habit_name: string;
+    suggested_tags: string[];
+    validation_rules: {
+      requires_umbrella_tag: boolean;
+      must_be_kebab_case: boolean;
+      approved_umbrellas: string[];
+    };
+  }> {
+    const response = await api.get('/api/tags/suggest', { 
+      params: { habit_name: habitName, limit }
+    });
+    return response.data;
+  }
+
+  /**
+   * Get the complete approved tag set organized by hierarchy
+   * Returns: Complete tag system structure for auto-complete and validation
+   */
+  static async getApprovedTags(): Promise<{
+    umbrella_tags: string[];
+    all_approved_tags: string[];
+    tag_hierarchy: Record<string, string[]>;
+    contextual_tags: string[];
+    format_requirements: {
+      case_format: string;
+      requires_umbrella: boolean;
+      allows_multiple_umbrellas: boolean;
+    };
+  }> {
+    const response = await api.get('/api/tags/approved');
+    return response.data;
+  }
 }
 
 // Error handling utility
