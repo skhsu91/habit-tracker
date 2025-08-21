@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HabitAPI, APIError } from '../services/api';
 import { HabitsTabData } from '../types/habit';
-import { UMBRELLA_TAGS, CONTEXTUAL_TAGS } from '../types/tags';
+import { UMBRELLA_TAGS, APPROVED_TAGS, CONTEXTUAL_TAGS } from '../types/tags';
 import { format, parseISO } from 'date-fns';
 
 const MasterListView: React.FC = () => {
