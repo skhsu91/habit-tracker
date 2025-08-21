@@ -105,7 +105,7 @@ export const TagValidation = {
    */
   getUmbrellaForTag: (tag: string): UmbrellaTag | null => {
     for (const [umbrella, specificTags] of Object.entries(APPROVED_TAGS)) {
-      if (specificTags.includes(tag as any)) {
+      if ((specificTags as readonly string[]).includes(tag)) {
         return umbrella as UmbrellaTag;
       }
     }
@@ -144,7 +144,7 @@ export const TagValidation = {
       // Suggest umbrella tags based on specific tags
       const specificTags = tags.filter(tag => 
         Object.values(APPROVED_TAGS).some(umbrellaSet => 
-          umbrellaSet.includes(tag as any) && !UMBRELLA_TAGS.includes(tag as any)
+          (umbrellaSet as readonly string[]).includes(tag) && !(UMBRELLA_TAGS as readonly string[]).includes(tag)
         )
       );
       
