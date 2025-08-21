@@ -12,9 +12,10 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
-import { ExclamationCircleIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, ChartBarIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HabitAPI, APIError } from '../services/api';
 import { AnalyticsTabData, CategoryAnalytics, TrendData } from '../types/habit';
+import { UMBRELLA_TAGS, APPROVED_TAGS, TagValidation } from '../types/tags';
 
 // Register ChartJS components
 ChartJS.register(
@@ -50,9 +51,16 @@ const Analytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   // timeRange lets users choose 30, 60, or 90 days of data
   const [timeRange, setTimeRange] = useState<30 | 60 | 90>(30);
+  
+  // State for hierarchical pie chart view
+  const [chartView, setChartView] = useState<'umbrella' | 'specific'>('umbrella');
+  const [selectedUmbrella, setSelectedUmbrella] = useState<string | null>(null);
 
   useEffect(() => {
     loadAnalytics();
+    // Reset chart view when time range changes
+    setChartView('umbrella');
+    setSelectedUmbrella(null);
   }, [timeRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAnalytics = async () => {
@@ -95,6 +103,75 @@ const Analytics: React.FC = () => {
     return Array.from({ length: count }, (_, i) => gradients[i % gradients.length]);
   };
 
+  // Helper function to aggregate category analytics by umbrella tags
+  const aggregateByUmbrellaTag = (categoryAnalytics: CategoryAnalytics) => {
+    const umbrellaData: Record<string, { count: number; total_duration: number; average_duration: number }> = {};
+    
+    // Initialize umbrella data
+    UMBRELLA_TAGS.forEach(umbrella => {
+      umbrellaData[umbrella] = { count: 0, total_duration: 0, average_duration: 0 };
+    });
+    
+    // Aggregate data for each category
+    Object.entries(categoryAnalytics).forEach(([category, stats]) => {
+      // Check if this category is an umbrella tag
+      if (UMBRELLA_TAGS.includes(category as any)) {
+        umbrellaData[category].count += stats.count;
+        umbrellaData[category].total_duration += stats.total_duration;
+      } else {
+        // Find which umbrella this specific tag belongs to
+        const umbrella = TagValidation.getUmbrellaForTag(category);
+        if (umbrella && umbrellaData[umbrella]) {
+          umbrellaData[umbrella].count += stats.count;
+          umbrellaData[umbrella].total_duration += stats.total_duration;
+        }
+      }
+    });
+    
+    // Calculate average durations
+    Object.keys(umbrellaData).forEach(umbrella => {
+      if (umbrellaData[umbrella].count > 0) {
+        umbrellaData[umbrella].average_duration = umbrellaData[umbrella].total_duration / umbrellaData[umbrella].count;
+      }
+    });
+    
+    // Filter out umbrellas with no data
+    return Object.fromEntries(
+      Object.entries(umbrellaData).filter(([_, data]) => data.count > 0)
+    );
+  };
+
+  // Helper function to get specific tags for a selected umbrella
+  const getSpecificTagsForUmbrella = (umbrella: string, categoryAnalytics: CategoryAnalytics) => {
+    const specificData: Record<string, { count: number; total_duration: number; average_duration: number }> = {};
+    
+    // Get specific tags for this umbrella
+    const umbrellaSpecificTags = APPROVED_TAGS[umbrella as keyof typeof APPROVED_TAGS] || [];
+    
+    Object.entries(categoryAnalytics).forEach(([category, stats]) => {
+      // Include this category if it's in the umbrella's specific tags (but not the umbrella itself)
+      if ((umbrellaSpecificTags as readonly string[]).includes(category) && category !== umbrella) {
+        specificData[category] = stats;
+      }
+    });
+    
+    return specificData;
+  };
+
+  // Helper function to get umbrella emoji and display name
+  const getUmbrellaDisplayInfo = (umbrella: string) => {
+    const emojiMap: Record<string, string> = {
+      health: '💪',
+      food: '🍽️', 
+      home: '🏠',
+      transportation: '🚗'
+    };
+    return {
+      emoji: emojiMap[umbrella] || '📊',
+      displayName: umbrella.charAt(0).toUpperCase() + umbrella.slice(1)
+    };
+  };
+
   const categoryChartData = analyticsData?.category_analytics ? {
     labels: Object.keys(analyticsData.category_analytics).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
     datasets: [
@@ -110,17 +187,42 @@ const Analytics: React.FC = () => {
     ]
   } : null;
 
-  const categoryCountData = analyticsData?.category_analytics ? {
-    labels: Object.keys(analyticsData.category_analytics).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
-    datasets: [{
-      data: Object.values(analyticsData.category_analytics).map(cat => cat.count),
-      backgroundColor: generateGradientColors(Object.keys(analyticsData.category_analytics).length),
-      borderWidth: 3,
-      borderColor: generateColors(Object.keys(analyticsData.category_analytics).length),
-      hoverBorderWidth: 4,
-      hoverBackgroundColor: generateColors(Object.keys(analyticsData.category_analytics).length),
-    }]
-  } : null;
+  // Create hierarchical category count data based on current view
+  const categoryCountData = analyticsData?.category_analytics ? (() => {
+    let dataToUse: Record<string, { count: number; total_duration: number; average_duration: number }>;
+    let labels: string[];
+    
+    if (chartView === 'umbrella') {
+      // Show umbrella tags aggregated
+      dataToUse = aggregateByUmbrellaTag(analyticsData.category_analytics);
+      labels = Object.keys(dataToUse).map(umbrella => {
+        const { emoji, displayName } = getUmbrellaDisplayInfo(umbrella);
+        return `${emoji} ${displayName}`;
+      });
+    } else {
+      // Show specific tags for selected umbrella
+      dataToUse = getSpecificTagsForUmbrella(selectedUmbrella!, analyticsData.category_analytics);
+      labels = Object.keys(dataToUse).map(tag => 
+        tag.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+      );
+    }
+    
+    const colors = generateGradientColors(Object.keys(dataToUse).length);
+    const borderColors = generateColors(Object.keys(dataToUse).length);
+    
+    return {
+      labels,
+      datasets: [{
+        data: Object.values(dataToUse).map(cat => cat.count),
+        backgroundColor: colors,
+        borderWidth: 3,
+        borderColor: borderColors,
+        hoverBorderWidth: 4,
+        hoverBackgroundColor: borderColors,
+        hoverOffset: 10,
+      }]
+    };
+  })() : null;
 
   const trendChartData = {
     labels: (analyticsData?.trend_analytics || []).map(d => {
@@ -282,17 +384,7 @@ const Analytics: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom' as const,
-        labels: {
-          color: '#f8fafc',
-          font: {
-            size: 13,
-            weight: 'bold' as const, // TypeScript fix: use 'as const' for literal types
-          },
-          padding: 15,
-          usePointStyle: true,
-          pointStyle: 'circle' as const,
-        },
+        display: false, // We're using a custom legend in the stats panel
       },
       tooltip: {
         backgroundColor: 'rgba(26, 31, 46, 0.95)',
@@ -301,8 +393,46 @@ const Analytics: React.FC = () => {
         borderColor: '#60a5fa',
         borderWidth: 1,
         cornerRadius: 8,
+        callbacks: {
+          afterLabel: (context: any) => {
+            const total = context.dataset.data.reduce((sum: number, val: number) => sum + val, 0);
+            const percentage = Math.round((context.parsed / total) * 100);
+            return `${percentage}% of total activities`;
+          }
+        }
       },
     },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0 && chartView === 'umbrella' && analyticsData?.category_analytics) {
+        const index = elements[0].index;
+        const umbrellaData = aggregateByUmbrellaTag(analyticsData.category_analytics);
+        const umbrellaKeys = Object.keys(umbrellaData);
+        const selectedUmbrellaKey = umbrellaKeys[index];
+        
+        // Check if this umbrella has specific tags to drill down to
+        const specificData = getSpecificTagsForUmbrella(selectedUmbrellaKey, analyticsData.category_analytics);
+        if (Object.keys(specificData).length > 0) {
+          setSelectedUmbrella(selectedUmbrellaKey);
+          setChartView('specific');
+        }
+      }
+    },
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 800,
+    },
+    elements: {
+      arc: {
+        borderWidth: 3,
+        hoverBorderWidth: 5,
+      }
+    },
+    cutout: '60%', // Makes it a doughnut with a larger center hole for better visibility
+    radius: '90%', // Use most of the available space
+    interaction: {
+      intersect: false,
+    }
   };
 
   if (loading) {
@@ -372,18 +502,162 @@ const Analytics: React.FC = () => {
           </div>
         </div>
 
-        {/* Category Count Pie Chart */}
+        {/* Hierarchical Activity Distribution */}
         <div className="metric-card">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-r from-accent-green to-accent-blue rounded-lg mr-3">
-              <ChartBarIcon className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-gradient-to-r from-accent-green to-accent-blue rounded-lg mr-3">
+                <ChartBarIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold gradient-text">📈 Activity Distribution</h3>
+                {chartView === 'specific' && selectedUmbrella && (
+                  <p className="text-sm text-secondary mt-1">
+                    Showing {getUmbrellaDisplayInfo(selectedUmbrella).emoji} {getUmbrellaDisplayInfo(selectedUmbrella).displayName} activities
+                  </p>
+                )}
+              </div>
             </div>
-            <h3 className="text-xl font-bold gradient-text">📈 Activity Distribution</h3>
-          </div>
-          <div className="h-80 bg-secondary rounded-lg p-4">
-            {categoryCountData && (
-              <Doughnut data={categoryCountData} options={doughnutOptions} />
+            
+            {/* Back button for specific view */}
+            {chartView === 'specific' && (
+              <button
+                onClick={() => {
+                  setChartView('umbrella');
+                  setSelectedUmbrella(null);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-tertiary hover:bg-gray-600 rounded-lg transition-colors duration-200 text-secondary hover:text-primary"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Back to Overview</span>
+              </button>
             )}
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Pie Chart - Now larger and more prominent */}
+            <div className="lg:col-span-2">
+              <div className="h-96 bg-secondary rounded-lg p-6 flex items-center justify-center relative">
+                {categoryCountData && Object.keys(categoryCountData.datasets[0].data).length > 0 ? (
+                  <>
+                    <div className="w-full h-full">
+                      <Doughnut data={categoryCountData} options={doughnutOptions} />
+                    </div>
+                    {/* Center content overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {categoryCountData.datasets[0].data.reduce((sum: number, val: number) => sum + val, 0)}
+                        </div>
+                        <div className="text-sm text-secondary">
+                          {chartView === 'umbrella' ? 'Total Activities' : 'Activities'}
+                        </div>
+                        {chartView === 'umbrella' && (
+                          <div className="text-xs text-accent-blue mt-1">
+                            Click to explore
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center text-secondary">
+                    <div className="text-4xl mb-4">📊</div>
+                    <p className="text-lg font-medium">No data available</p>
+                    <p className="text-sm">
+                      {chartView === 'specific' 
+                        ? `No specific activities found for ${selectedUmbrella}`
+                        : 'No activities found for this time period'
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Stats Panel - Better organized information */}
+            <div className="lg:col-span-1">
+              <div className="bg-secondary rounded-lg p-6 h-96 overflow-y-auto">
+                <h4 className="text-lg font-bold text-primary mb-4 border-b border-light pb-2">
+                  {chartView === 'umbrella' ? '📊 Overview Stats' : '📋 Detailed Breakdown'}
+                </h4>
+                
+                {categoryCountData && (() => {
+                  const dataToUse = chartView === 'umbrella' 
+                    ? aggregateByUmbrellaTag(analyticsData!.category_analytics!)
+                    : getSpecificTagsForUmbrella(selectedUmbrella!, analyticsData!.category_analytics!);
+                  
+                  const sortedEntries = Object.entries(dataToUse)
+                    .sort(([,a], [,b]) => b.count - a.count);
+                  
+                  return (
+                    <div className="space-y-3">
+                      {sortedEntries.map(([key, stats], index) => {
+                        const { emoji, displayName } = chartView === 'umbrella' 
+                          ? getUmbrellaDisplayInfo(key)
+                          : { emoji: '🏷️', displayName: key.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') };
+                        
+                        const colors = generateColors(sortedEntries.length);
+                        
+                        const hasSpecificTags = chartView === 'umbrella' && 
+                          Object.keys(getSpecificTagsForUmbrella(key, analyticsData!.category_analytics!)).length > 0;
+                        
+                        return (
+                          <div 
+                            key={key} 
+                            className={`flex items-center justify-between p-3 bg-tertiary rounded-lg transition-colors duration-200 ${
+                              hasSpecificTags 
+                                ? 'hover:bg-gray-600 cursor-pointer hover:border-accent-blue border-2 border-transparent' 
+                                : 'hover:bg-gray-700'
+                            }`}
+                            onClick={() => {
+                              if (hasSpecificTags) {
+                                setSelectedUmbrella(key);
+                                setChartView('specific');
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-4 h-4 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: colors[index] }}
+                              ></div>
+                              <div>
+                                <div className="font-medium text-primary flex items-center gap-2">
+                                  {emoji} {displayName}
+                                  {hasSpecificTags && (
+                                    <span className="text-xs text-accent-blue">→</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-secondary">
+                                  Avg: {Math.round(stats.average_duration)}m
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-accent-blue">
+                                {stats.count}
+                              </div>
+                              <div className="text-xs text-secondary">
+                                {Math.round(stats.total_duration / 60 * 10) / 10}h
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {chartView === 'umbrella' && (
+                        <div className="mt-6 p-4 bg-tertiary rounded-lg border border-accent-blue border-opacity-30">
+                          <p className="text-sm text-secondary text-center">
+                            💡 <span className="font-medium">Tip:</span> Click on any slice to see detailed breakdown
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
         </div>
       </div>
