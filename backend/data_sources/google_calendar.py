@@ -27,15 +27,16 @@ class GoogleCalendarEvent:
         self.location = event_data.get('location', '')
         
         # Handle start time - could be date or dateTime
+        from datetime import timezone
         start = event_data.get('start', {})
         if 'dateTime' in start:
             self.start_time = datetime.fromisoformat(start['dateTime'].replace('Z', '+00:00'))
             self.all_day = False
         elif 'date' in start:
-            self.start_time = datetime.fromisoformat(start['date'] + 'T00:00:00')
+            self.start_time = datetime.fromisoformat(start['date'] + 'T00:00:00+00:00')
             self.all_day = True
         else:
-            self.start_time = datetime.now()
+            self.start_time = datetime.now(timezone.utc)
             self.all_day = False
             
         # Handle end time
@@ -43,7 +44,7 @@ class GoogleCalendarEvent:
         if 'dateTime' in end:
             self.end_time = datetime.fromisoformat(end['dateTime'].replace('Z', '+00:00'))
         elif 'date' in end:
-            self.end_time = datetime.fromisoformat(end['date'] + 'T23:59:59')
+            self.end_time = datetime.fromisoformat(end['date'] + 'T23:59:59+00:00')
         else:
             self.end_time = self.start_time + timedelta(hours=1)  # Default 1 hour duration
     
@@ -55,19 +56,25 @@ class GoogleCalendarEvent:
     
     def is_today(self) -> bool:
         """Check if event is today"""
-        today = datetime.now().date()
+        from datetime import timezone
+        today = datetime.now(timezone.utc).date()
         return self.start_time.date() == today
     
     def is_upcoming_today(self) -> bool:
         """Check if event is upcoming today (hasn't started yet)"""
-        now = datetime.now()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         return self.is_today() and self.start_time > now
     
     def format_time(self) -> str:
-        """Format the time for display"""
+        """Format the time for display in system local timezone"""
         if self.all_day:
             return "All day"
-        return self.start_time.strftime("%I:%M %p").lstrip('0')
+        
+        # Convert UTC time to system local timezone for display
+        import datetime
+        local_time = self.start_time.astimezone()  # Converts to system timezone
+        return local_time.strftime("%I:%M %p").lstrip('0')
     
     def to_display_string(self) -> str:
         """Convert to display string for upcoming events"""
@@ -157,18 +164,36 @@ class GoogleCalendarSource(DataSource):
                 return []
         
         try:
-            # Get today's date range
-            now = datetime.now()
+            # Get today's date range with proper timezone handling
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
             start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
             end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
             
-            # Format for Google Calendar API (RFC3339)
-            time_min = start_of_day.isoformat() + 'Z'
-            time_max = end_of_day.isoformat() + 'Z'
+            # Focus on today but also include recent events for debugging
+            start_of_today = start_of_day
+            # Extend to tomorrow to catch timezone edge cases (8pm CST = 2am UTC next day)
+            end_of_tomorrow = end_of_day + timedelta(days=1)
+            
+            # Check past 2 weeks for debugging as requested
+            start_debug = start_of_day - timedelta(days=14)
+            
+            # Format for Google Calendar API (RFC3339) - search from past 2 weeks through tomorrow
+            time_min = start_debug.isoformat()
+            time_max = end_of_tomorrow.isoformat()
+            
+            print(f"🔍 Searching for events from {start_debug.date()} to {end_of_tomorrow.date()}")
+            print(f"📅 Today is: {start_of_today.date()}")
+            print(f"🕐 Current time: {now} (looking for events later than this)")
+            print(f"🌍 Time zone note: Searching through tomorrow to catch CST/PST events")
+            
+            # Use the specific Habit Tracking calendar ID
+            calendar_id = "80ed134756f92907c9b19c0a5b76dff1497f4f437a4542d3ed996648acecf45b@group.calendar.google.com"
+            print(f"📅 Fetching events from Habit Tracking calendar: {calendar_id}")
             
             # Call Google Calendar API
             events_result = self.service.events().list(
-                calendarId='primary',
+                calendarId=calendar_id,
                 timeMin=time_min,
                 timeMax=time_max,
                 maxResults=20,
@@ -177,12 +202,39 @@ class GoogleCalendarSource(DataSource):
             ).execute()
             
             events = events_result.get('items', [])
+            print(f"📊 Found {len(events)} total events in Habit Tracking calendar (past 2 weeks)")
+            
             upcoming_events = []
+            all_events = []
+            today_events = []
             
             for event_data in events:
                 calendar_event = GoogleCalendarEvent(event_data)
-                if calendar_event.is_upcoming_today():
-                    upcoming_events.append(calendar_event.to_display_string())
+                event_info = f"{calendar_event.start_time.date()} {calendar_event.format_time()} - {calendar_event.summary}"
+                all_events.append(event_info)
+                
+                # Check if event is today
+                if calendar_event.is_today():
+                    today_events.append(f"{calendar_event.format_time()} - {calendar_event.summary}")
+                    
+                    # Check if it's upcoming today
+                    if calendar_event.is_upcoming_today():
+                        upcoming_events.append(calendar_event.to_display_string())
+            
+            print(f"📅 All events (past week): {all_events[:5]}...")  # Show first 5
+            print(f"📅 Today's events: {today_events}")
+            print(f"⏰ Upcoming today: {upcoming_events}")
+            print(f"🕐 Current UTC time: {datetime.now(timezone.utc)}")
+            
+            # Store debug info for API access
+            self._debug_info = {
+                "total_events_found": len(events),
+                "all_events_sample": all_events[:10],  # First 10 events
+                "today_events": today_events,
+                "upcoming_events": upcoming_events,
+                "current_utc_time": str(datetime.now(timezone.utc)),
+                "search_range": f"{start_debug.date()} to {end_of_tomorrow.date()}"
+            }
             
             return upcoming_events
             
@@ -213,10 +265,16 @@ class GoogleCalendarSource(DataSource):
             return None
         
         try:
+            # Use flexible scopes to match what we handle in the callback
+            flexible_scopes = [
+                'https://www.googleapis.com/auth/calendar.readonly',
+                'https://www.googleapis.com/auth/calendar'
+            ]
+            
             flow = Flow.from_client_secrets_file(
                 self.credentials_file,
-                scopes=self.scopes,
-                redirect_uri='http://localhost:8080/auth/google/callback'
+                scopes=flexible_scopes,
+                redirect_uri='http://localhost:8000/auth/google/callback'
             )
             
             auth_url, _ = flow.authorization_url(
@@ -228,3 +286,64 @@ class GoogleCalendarSource(DataSource):
         except Exception as e:
             print(f"Error generating auth URL: {e}")
             return None
+    
+    async def handle_oauth_callback(self, authorization_code: str) -> bool:
+        """Handle the OAuth callback and save tokens"""
+        try:
+            # Use a more flexible scope list that includes what Google might grant
+            flexible_scopes = [
+                'https://www.googleapis.com/auth/calendar.readonly',
+                'https://www.googleapis.com/auth/calendar'
+            ]
+            
+            flow = Flow.from_client_secrets_file(
+                self.credentials_file,
+                scopes=flexible_scopes,
+                redirect_uri='http://localhost:8000/auth/google/callback'
+            )
+            
+            # Exchange authorization code for tokens
+            flow.fetch_token(code=authorization_code)
+            creds = flow.credentials
+            
+            # Save the credentials for future use
+            with open(self.token_file, 'w') as token:
+                token.write(creds.to_json())
+            
+            # Initialize the service with new credentials
+            self.service = build('calendar', 'v3', credentials=creds)
+            
+            print("✅ Google Calendar authentication successful and tokens saved!")
+            return True
+            
+        except Exception as e:
+            print(f"Error processing OAuth callback: {e}")
+            return False
+    
+    async def _find_habit_tracking_calendar(self) -> Optional[str]:
+        """Find the calendar ID for the 'Habit Tracking' calendar"""
+        try:
+            calendars_result = self.service.calendarList().list().execute()
+            calendars = calendars_result.get('items', [])
+            
+            for calendar in calendars:
+                calendar_name = calendar.get('summary', '').lower()
+                if 'habit tracking' in calendar_name or 'habit-tracking' in calendar_name:
+                    print(f"✅ Found Habit Tracking calendar: {calendar.get('summary')} (ID: {calendar.get('id')})")
+                    return calendar.get('id')
+            
+            return None
+        except Exception as e:
+            print(f"Error finding Habit Tracking calendar: {e}")
+            return None
+    
+    async def _list_available_calendars(self):
+        """List all available calendars for debugging"""
+        try:
+            calendars_result = self.service.calendarList().list().execute()
+            calendars = calendars_result.get('items', [])
+            
+            for calendar in calendars:
+                print(f"  - {calendar.get('summary', 'Unnamed')} (ID: {calendar.get('id')})")
+        except Exception as e:
+            print(f"Error listing calendars: {e}")

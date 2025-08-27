@@ -465,9 +465,15 @@ async def get_calendar_auth_url():
 async def google_calendar_callback(code: str, state: str = None):
     """Handle Google Calendar OAuth callback"""
     try:
-        # This would need to be implemented in the GoogleCalendarSource
-        # For now, return a simple success message
-        return RedirectResponse(url="http://localhost:3000?calendar_auth=success")
+        # Process the authorization code with the Google Calendar source
+        if data_manager.calendar_source:
+            success = await data_manager.calendar_source.handle_oauth_callback(code)
+            if success:
+                return RedirectResponse(url="http://localhost:3000?calendar_auth=success")
+            else:
+                return RedirectResponse(url="http://localhost:3000?calendar_auth=error&message=Failed to process authorization")
+        else:
+            return RedirectResponse(url="http://localhost:3000?calendar_auth=error&message=Calendar source not available")
     except Exception as e:
         return RedirectResponse(url=f"http://localhost:3000?calendar_auth=error&message={str(e)}")
 
@@ -479,6 +485,34 @@ async def get_upcoming_calendar_events():
         return {"upcoming_events": upcoming}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching upcoming events: {str(e)}")
+
+@app.get("/api/calendar/debug")
+async def debug_calendar():
+    """Debug calendar access and show detailed info"""
+    try:
+        if not data_manager.calendar_source:
+            return {"error": "Calendar source not available"}
+        
+        # Test calendar connection
+        available = await data_manager.calendar_source.is_available()
+        
+        if not available:
+            return {"error": "Calendar not available", "available": False}
+        
+        # Try to get upcoming events with debug info
+        upcoming = await data_manager.calendar_source.get_upcoming_today()
+        
+        # Get debug info if available
+        debug_info = getattr(data_manager.calendar_source, '_debug_info', {})
+        
+        return {
+            "calendar_available": True,
+            "upcoming_events": upcoming,
+            "calendar_id": "80ed134756f92907c9b19c0a5b76dff1497f4f437a4542d3ed996648acecf45b@group.calendar.google.com",
+            "debug_info": debug_info
+        }
+    except Exception as e:
+        return {"error": f"Debug error: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn

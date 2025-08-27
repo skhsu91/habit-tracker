@@ -215,3 +215,4 @@ dev_settings.py
 test_data/
 sample_data/
 docs/.work_status.md
+backend/google_calendar_token.json
