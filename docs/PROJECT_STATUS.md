@@ -8,7 +8,7 @@
 - **Backend**: FastAPI server with config-based setup (`backend/config.py`)
 - **Frontend**: React app with polished dark mode UI
 - **Data Integration**: Real Google Sheets data (not mock) via CSV export
-- **API Architecture**: Tab-specific endpoints with server-side filtering
+- **API Architecture**: Tab-specific backend endpoints with server-side filtering
 - **Tag System**: Hierarchical validation with umbrella → specific → contextual tags
 - **Analytics**: Interactive charts with category breakdowns and trends
 - **UI Components**: Professional design system with consistent styling
@@ -16,7 +16,7 @@
 ### **⚙️ Technical Architecture**
 - **Configuration**: Centralized `backend/config.py` (no environment variables needed)
 - **Data Sources**: Simple Google Sheets (CSV), Google Calendar (OAuth ready), Mock fallback
-- **Frontend**: Mobile-first responsive design with Tailwind CSS
+- **Frontend**: Single-page app with state-based navigation (mobile-first for React Native migration)
 - **Backend**: FastAPI with async/await, Pydantic models, CORS configured
 - **Storage**: Google Sheets as primary data source with extensible architecture
 
@@ -125,7 +125,11 @@
 - **Accessibility**: Semantic HTML, proper ARIA labels, keyboard navigation
 
 ### **API Design:**
-- **Tab-specific endpoints**: Each major UI section has dedicated optimized API
+- **Tab-specific backend endpoints**: Each major UI section has dedicated optimized API:
+  - `/api/tabs/overview` - Daily overview with today's habits and metrics
+  - `/api/tabs/habits` - Complete habits list with filtering and search
+  - `/api/tabs/analytics` - Analytics data with category breakdowns and trends
+- **Frontend navigation**: State-based tab switching (no URL routes) for mobile-first design and React Native compatibility
 - **Server-side operations**: Filtering, sorting, search handled by backend
 - **Consistent responses**: Structured data with metadata for frontend use
 - **Error handling**: Graceful fallbacks, user-friendly error messages
