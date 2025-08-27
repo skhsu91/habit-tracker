@@ -352,6 +352,11 @@ body {
   animation: fadeInUp var(--tw-animate-duration, 400ms) ease-out both;
 }
 
+/* Fast fade-in for initial page load */
+.animate-fade-in-fast {
+  animation: fadeIn 200ms ease-out both;
+}
+
 @keyframes fadeInUp {
   0% {
     opacity: 0;
@@ -360,6 +365,15 @@ body {
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -596,3 +610,6 @@ input:focus, select:focus {
 
 /* Drop shadow utilities for icons */
 .drop-shadow-sm { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05)); }
+
+/* Skeleton loading backgrounds */
+.bg-gray-700 { background-color: #374151; }
