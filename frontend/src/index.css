@@ -571,3 +571,28 @@ input:focus, select:focus {
 .shadow-lg {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
 }
+
+/* Enhanced All Habits color palette - subtle gradients and glows */
+.shadow-accent-blue\/50 { box-shadow: 0 1px 3px rgba(96, 165, 250, 0.5); }
+.shadow-accent-green\/50 { box-shadow: 0 1px 3px rgba(74, 222, 128, 0.5); }
+.shadow-accent-purple\/50 { box-shadow: 0 1px 3px rgba(168, 85, 247, 0.5); }
+.shadow-accent-yellow\/50 { box-shadow: 0 1px 3px rgba(250, 204, 21, 0.5); }
+
+/* Additional color utilities for enhanced habit cards */
+.border-accent-blue\/20 { border-color: rgba(96, 165, 250, 0.2); }
+.border-accent-green\/30 { border-color: rgba(74, 222, 128, 0.3); }
+.text-accent-blue\/60 { color: rgba(96, 165, 250, 0.6); }
+.text-accent-green\/70 { color: rgba(74, 222, 128, 0.7); }
+.text-accent-green\/90 { color: rgba(74, 222, 128, 0.9); }
+
+/* Background gradients with opacity for subtle styling */
+.from-accent-green\/20 { --tw-gradient-from: rgba(74, 222, 128, 0.2); }
+.to-accent-blue\/20 { --tw-gradient-to: rgba(96, 165, 250, 0.2); }
+.from-accent-green\/20 { --tw-gradient-from: rgba(74, 222, 128, 0.2); }
+.to-accent-green\/30 { --tw-gradient-to: rgba(74, 222, 128, 0.3); }
+
+/* Enhanced hover effects for habit cards */
+.hover\\:border-l-accent-green:hover { border-left-color: var(--accent-green); }
+
+/* Drop shadow utilities for icons */
+.drop-shadow-sm { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05)); }

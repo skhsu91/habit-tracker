@@ -43,6 +43,7 @@
 - **Backend Startup**: Dependency and import errors → Proper venv setup and config imports
 - **Documentation Overlap**: README duplication → **PR #7**: Focused documentation hierarchy (Aug 27, 2024)
 - **Agent Coordination**: Need for multi-agent workflow guidelines → **PR #8**: Added AGENT_WORKFLOW.md with git commands and local task tracking (Aug 27, 2024)
+- **All Habits Color Palette**: Bright, harsh category tag colors didn't match app's sophisticated dark theme → Enhanced with muted gradients, subtle shadows, gradient text effects, and improved card styling for better visual harmony (Dec 19, 2024)
 
 ## 📋 **Current Priorities**
 
