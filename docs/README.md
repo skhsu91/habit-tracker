@@ -12,6 +12,8 @@ Technical specifications and design documents:
 Setup instructions and configuration documentation:
 - **`CONFIGURATION_GUIDE.md`** - Centralized configuration system guide
 - **`GOOGLE_CALENDAR_SETUP.md`** - Google Calendar OAuth setup instructions
+- **`SECURITY_GUIDELINES.md`** - Security protocols for sensitive information
+- **`SHELL_COMPATIBILITY.md`** - Shell-agnostic development guide
 
 ## 📋 Documentation Files
 

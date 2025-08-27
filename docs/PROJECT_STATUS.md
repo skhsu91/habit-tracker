@@ -46,6 +46,7 @@
 - **All Habits Color Palette**: Bright, harsh category tag colors didn't match app's sophisticated dark theme → Enhanced with muted gradients, subtle shadows, gradient text effects, and improved card styling for better visual harmony (Dec 19, 2024)
 - **Analytics UI Issues**: Module spacing inconsistent with Overview + "Back to Overview" button styling poor → Fixed spacing to match Overview (space-y-6) and upgraded button to use gradient design system (Jan 22, 2025)
 - **Data Source Migration**: Need reliable primary database instead of Google Sheets CSV → **PR #9**: Integrated Supabase PostgreSQL as primary with Google Sheets fallback and secure environment variable management (Aug 27, 2024)
+- **Shell Compatibility Issues**: Zsh command errors and bash-specific syntax causing problems → **PR #12**: Created POSIX-compliant scripts and shell-agnostic documentation for universal compatibility (Aug 27, 2024)
 
 ## 📋 **Current Priorities**
 
@@ -89,12 +90,13 @@
 ## ⚡ **Quick Development Setup**
 
 ### **Start Development Servers:**
-```bash
-# Backend (from project root)
-cd backend && source venv/bin/activate && python main.py &
+```sh
+# Easy way (shell-agnostic scripts):
+./scripts/dev-start.sh
 
-# Frontend (from project root)  
-cd frontend && npm start &
+# Manual way (if needed):
+# Backend: cd backend && . venv/bin/activate && python main.py &
+# Frontend: cd frontend && npm start &
 
 # Access Points:
 # Frontend: http://localhost:3000
