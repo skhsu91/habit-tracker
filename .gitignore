@@ -214,3 +214,4 @@ dev_settings.py
 # Test data
 test_data/
 sample_data/
+docs/.work_status.md
