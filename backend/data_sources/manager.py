@@ -6,6 +6,9 @@ from .google_sheets import GoogleSheetsDataSource
 from .simple_sheets import SimpleGoogleSheetsDataSource
 from .google_calendar import GoogleCalendarSource
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import GOOGLE_SHEETS_ID, DEFAULT_DATA_SOURCE
 
 class DataSourceManager:
     """Manages multiple data sources and provides unified access to habit data"""
@@ -19,23 +22,34 @@ class DataSourceManager:
     def _initialize_sources(self):
         """Initialize and configure available data sources"""
         
-        # Always add mock data source for development
+        # Always add mock data source for development/fallback
         mock_source = MockDataSource()
         self.sources.append(mock_source)
-        self.primary_source = mock_source  # Default to mock for now
         
         # Try to add Simple Google Sheets (CSV-based, no auth needed)
-        sheet_id = os.getenv('GOOGLE_SHEETS_ID')
+        # Use config file instead of environment variable
+        sheet_id = GOOGLE_SHEETS_ID
         
         if sheet_id:
             try:
                 simple_sheets_source = SimpleGoogleSheetsDataSource(sheet_id)
                 self.sources.append(simple_sheets_source)
-                print(f"Added Simple Google Sheets source with ID: {sheet_id}")
-                # Make Google Sheets the primary source since it's working!
-                self.primary_source = simple_sheets_source
+                print(f"✅ Added Simple Google Sheets source with ID: {sheet_id}")
+                
+                # Set Google Sheets as primary source if configured as default
+                if DEFAULT_DATA_SOURCE == "simple_google_sheets":
+                    self.primary_source = simple_sheets_source
+                    print("📊 Set Simple Google Sheets as primary data source")
+                else:
+                    self.primary_source = mock_source
+                    print("🧪 Using mock data as primary source (check config.py to change)")
+                    
             except Exception as e:
-                print(f"Failed to initialize Simple Google Sheets source: {e}")
+                print(f"❌ Failed to initialize Simple Google Sheets source: {e}")
+                self.primary_source = mock_source
+        else:
+            print("⚠️  No Google Sheets ID configured")
+            self.primary_source = mock_source
         
         # Try to add full Google Sheets API if configured with service account
         credentials_path = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE')
@@ -44,17 +58,17 @@ class DataSourceManager:
             try:
                 sheets_source = GoogleSheetsDataSource(sheet_id, credentials_path)
                 self.sources.append(sheets_source)
-                print(f"Added full Google Sheets API source")
+                print(f"✅ Added full Google Sheets API source")
             except Exception as e:
-                print(f"Failed to initialize Google Sheets API source: {e}")
+                print(f"❌ Failed to initialize Google Sheets API source: {e}")
         
         # Try to add Google Calendar source for upcoming events
         try:
             calendar_source = GoogleCalendarSource()
             self.calendar_source = calendar_source
-            print(f"Added Google Calendar source for upcoming events")
+            print(f"✅ Added Google Calendar source for upcoming events")
         except Exception as e:
-            print(f"Failed to initialize Google Calendar source: {e}")
+            print(f"❌ Failed to initialize Google Calendar source: {e}")
     
     async def get_available_sources(self) -> List[str]:
         """Get list of available data source names"""

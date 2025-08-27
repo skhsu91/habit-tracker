@@ -14,7 +14,10 @@ from data_sources.base import HabitEvent
 # Import tag validation utilities
 from utils.tag_validation import TagValidator, TagValidationResult, validate_tags, suggest_tags
 
-# Load environment variables
+# Import configuration
+from config import CORS_ORIGINS, API_HOST, API_PORT
+
+# Load environment variables (for any remaining env vars like Google OAuth)
 load_dotenv()
 
 app = FastAPI(title="Habit Tracker API", version="1.0.0")
@@ -25,7 +28,7 @@ data_manager = DataSourceManager()
 # Configure CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_origins=CORS_ORIGINS,  # From config.py
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -479,4 +482,4 @@ async def get_upcoming_calendar_events():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host=API_HOST, port=API_PORT, reload=True)
