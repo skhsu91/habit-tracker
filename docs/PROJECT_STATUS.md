@@ -8,6 +8,7 @@
 - **Backend**: FastAPI server with config-based setup (`backend/config.py`)
 - **Frontend**: React app with polished dark mode UI
 - **Data Integration**: Real Google Sheets data (not mock) via CSV export
+- **Google Calendar Integration**: OAuth authentication with timezone-aware event display
 - **API Architecture**: Tab-specific backend endpoints with server-side filtering
 - **Tag System**: Hierarchical validation with umbrella → specific → contextual tags
 - **Analytics**: Interactive charts with category breakdowns and trends
@@ -49,24 +50,25 @@
 - **Shell Compatibility Issues**: Zsh command errors and bash-specific syntax causing problems → **PR #12**: Created POSIX-compliant scripts and shell-agnostic documentation for universal compatibility (Aug 27, 2024)
 - **Secret Management Scalability**: Need flexible secret management for future enterprise deployment → **PR #13**: Built future-ready secret management supporting .env files, AWS Secrets Manager, and Azure Key Vault with gradual migration path (Aug 27, 2024)
 - **Analytics Dashboard Padding**: Time by Category and Activity Distribution sections had inconsistent padding and wasted space → Redesigned with consistent padding (p-6), compact Activity Distribution layout with horizontal flexbox design, smaller chart heights (h-64), and improved space utilization (Jan 22, 2025)
+- **Google Calendar Integration**: Complete OAuth setup and timezone-aware event display → **PR #14**: Implemented Google Calendar OAuth flow, specific calendar targeting, timezone conversion, and frontend integration for "Planned for Today" section (Aug 27, 2024)
 
 ## 📋 **Current Priorities**
 
 ### 🔥 **HIGH PRIORITY**
-1. **Google Calendar OAuth Setup** - Complete OAuth credentials in Google Cloud Console
-2. **Analytics Filtering UI** - Add dropdowns for category/time range selection  
-3. **Habit Creation Interface** - Build forms for adding new habits with tag validation
+1. **Analytics Filtering UI** - Add dropdowns for category/time range selection  
+2. **Habit Creation Interface** - Build forms for adding new habits with tag validation
+3. **Data Export Functionality** - CSV/JSON export for backup and analysis
 
 ### 🎯 **MEDIUM PRIORITY**
-4. **Data Export Functionality** - CSV/JSON export for backup and analysis
-5. **Advanced Search** - Multiple tag filters, date ranges, text search
-6. **Database Storage Option** - PostgreSQL/SQLite alternative to Google Sheets
+4. **Advanced Search** - Multiple tag filters, date ranges, text search
+5. **Goal Tracking System** - Set targets and track progress over time
+6. **Mobile Optimization** - Polish for React Native migration
 
 ### 💡 **FUTURE ENHANCEMENTS**
-7. **Goal Tracking System** - Set targets and track progress over time
-8. **Mobile Optimization** - Polish for React Native migration
-9. **Withings Integration** - Sleep and health metrics correlation
-10. **Offline Support** - Local storage with sync capabilities
+7. **Withings Integration** - Sleep and health metrics correlation
+8. **Offline Support** - Local storage with sync capabilities
+9. **Advanced Calendar Features** - Recurring events, calendar sync, multiple calendar support
+10. **Notification System** - Reminders for upcoming habits and events
 
 ## 🏗️ **Project Structure**
 
@@ -142,6 +144,13 @@
 - **Sheet ID**: `1XNStkzcSwSxsPQ6-XRNL1wCjwfc1MQeEhDRJOPB2u1s`
 - **Format**: Structured columns with category arrays and ISO dates
 - **Parsing**: Robust handling of quoted arrays and various date formats
+
+### **Google Calendar Integration:**
+- **OAuth Flow**: Complete Google OAuth 2.0 authentication with callback handling
+- **Calendar Targeting**: Specific "Habit Tracking" calendar integration
+- **Timezone Support**: Automatic conversion to user's local timezone for display
+- **Event Display**: "Planned for Today" section shows upcoming calendar events
+- **Fallback**: Graceful handling when calendar is unavailable
 
 ### **Tag Validation System:**
 - **Umbrella tags**: `health`, `food`, `home`, `transportation` 
