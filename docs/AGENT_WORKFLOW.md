@@ -5,13 +5,13 @@
 ## 🔄 **Essential Git Workflow for Multi-Agent Coordination**
 
 ### **At Session Start:**
-```bash
+```sh
 # 1. ALWAYS start with fresh main branch
 git checkout main
 git pull origin main
 
 # 2. Check current work status (if file exists)
-cat docs/.work_status.md || echo "No active work tracking file"
+test -f docs/.work_status.md && cat docs/.work_status.md || echo "No active work tracking file"
 
 # 3. Check recent activity to avoid conflicts
 git log --oneline -10
@@ -21,7 +21,7 @@ git checkout -b feature/your-descriptive-task-name
 ```
 
 #### **During Development:**
-```bash
+```sh
 # Frequent commits with descriptive messages
 git add .
 git commit -m "feat/fix/docs: specific change description"
@@ -31,7 +31,7 @@ git push origin feature/your-branch-name
 ```
 
 #### **Before Creating PR:**
-```bash
+```sh
 # 1. Ensure you're up to date
 git checkout main
 git pull origin main
@@ -49,7 +49,7 @@ git push origin feature/your-branch-name
 ```
 
 #### **After PR Creation:**
-```bash
+```sh
 # If you're the one merging (with approvals):
 gh pr merge [pr-number] --squash --delete-branch
 
@@ -68,7 +68,7 @@ git branch -d feature/old-branch-name  # Clean up local branches
 5. **Pull main after any PR merge** - Stay synchronized with team changes
 
 ### **📱 Quick Status Commands:**
-```bash
+```sh
 # Check recent activity
 git log --oneline -10
 
@@ -79,7 +79,7 @@ git fetch && git log HEAD..origin/main --oneline
 git status
 
 # Optional: Check local work status (if using .work_status.md)
-cat docs/.work_status.md 2>/dev/null || echo "No local work status file"
+test -f docs/.work_status.md && cat docs/.work_status.md || echo "No local work status file"
 ```
 
 ## 🔍 **Conflict Prevention Strategy**
