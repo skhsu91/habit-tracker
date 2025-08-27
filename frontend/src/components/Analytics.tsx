@@ -463,7 +463,7 @@ const Analytics: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with Time Range Selector - Beautiful Dark Mode */}
-      <div className="stat-card">
+      <div className="bg-secondary border border-light rounded-xl p-6 shadow-md transition-all duration-300">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center mb-4 sm:mb-0">
             <ChartBarIcon className="h-8 w-8 mr-3 text-accent-blue" />
@@ -486,25 +486,25 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Charts Grid - Mobile-responsive with Beautiful Cards */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Category Duration Chart */}
-        <div className="metric-card">
-          <div className="flex items-center mb-6">
+        <div className="bg-secondary border border-light rounded-xl p-6 shadow-md transition-all duration-300 hover:shadow-lg">
+          <div className="flex items-center mb-4">
             <div className="p-2 bg-gradient-to-r from-accent-blue to-accent-purple rounded-lg mr-3">
               <ChartBarIcon className="h-6 w-6 text-white" />
             </div>
             <h3 className="text-xl font-bold gradient-text">⏱️ Time by Category</h3>
           </div>
-          <div className="h-80 bg-secondary rounded-lg p-4">
+          <div className="h-80 bg-tertiary rounded-lg p-4">
             {categoryChartData && (
               <Bar data={categoryChartData} options={barChartOptions} />
             )}
           </div>
         </div>
 
-        {/* Hierarchical Activity Distribution */}
-        <div className="metric-card">
-          <div className="flex items-center justify-between mb-6">
+        {/* Hierarchical Activity Distribution - Redesigned for better space utilization */}
+        <div className="bg-secondary border border-light rounded-xl p-6 shadow-md transition-all duration-300 hover:shadow-lg">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <div className="p-2 bg-gradient-to-r from-accent-green to-accent-blue rounded-lg mr-3">
                 <ChartBarIcon className="h-6 w-6 text-white" />
@@ -526,7 +526,7 @@ const Analytics: React.FC = () => {
                   setChartView('umbrella');
                   setSelectedUmbrella(null);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-semibold rounded-lg transition-all duration-300 shadow-sm hover:shadow-md hover:transform hover:scale-105 border border-transparent hover:border-blue-400"
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
                 <span>Back to Overview</span>
@@ -534,22 +534,22 @@ const Analytics: React.FC = () => {
             )}
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Pie Chart - Now larger and more prominent */}
-            <div className="lg:col-span-2">
-              <div className="h-96 bg-secondary rounded-lg p-6 flex items-center justify-center relative">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Pie Chart - Optimized layout */}
+            <div className="flex-1">
+              <div className="h-64 bg-tertiary rounded-lg p-4 flex items-center justify-center relative">
                 {categoryCountData && Object.keys(categoryCountData.datasets[0].data).length > 0 ? (
                   <>
-                    <div className="w-full h-full">
+                    <div className="w-full h-full max-w-xs mx-auto">
                       <Doughnut data={categoryCountData} options={doughnutOptions} />
                     </div>
                     {/* Center content overlay */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">
+                        <div className="text-xl font-bold text-primary">
                           {categoryCountData.datasets[0].data.reduce((sum: number, val: number) => sum + val, 0)}
                         </div>
-                        <div className="text-sm text-secondary">
+                        <div className="text-xs text-secondary">
                           {chartView === 'umbrella' ? 'Total Activities' : 'Activities'}
                         </div>
                         {chartView === 'umbrella' && (
@@ -562,9 +562,9 @@ const Analytics: React.FC = () => {
                   </>
                 ) : (
                   <div className="text-center text-secondary">
-                    <div className="text-4xl mb-4">📊</div>
-                    <p className="text-lg font-medium">No data available</p>
-                    <p className="text-sm">
+                    <div className="text-3xl mb-2">📊</div>
+                    <p className="text-sm font-medium">No data available</p>
+                    <p className="text-xs">
                       {chartView === 'specific' 
                         ? `No specific activities found for ${selectedUmbrella}`
                         : 'No activities found for this time period'
@@ -575,11 +575,11 @@ const Analytics: React.FC = () => {
               </div>
             </div>
             
-            {/* Stats Panel - Better organized information */}
-            <div className="lg:col-span-1">
-              <div className="bg-secondary rounded-lg p-6 h-96 overflow-y-auto">
-                <h4 className="text-lg font-bold text-primary mb-4 border-b border-light pb-2">
-                  {chartView === 'umbrella' ? '📊 Overview Stats' : '📋 Detailed Breakdown'}
+            {/* Stats Panel - Compact layout */}
+            <div className="flex-1 lg:max-w-sm">
+              <div className="bg-tertiary rounded-lg p-4 h-64 overflow-y-auto">
+                <h4 className="text-sm font-bold text-primary mb-3 uppercase tracking-wider">
+                  {chartView === 'umbrella' ? '📊 Category Breakdown' : '📋 Detailed Stats'}
                 </h4>
                 
                 {categoryCountData && (() => {
@@ -591,7 +591,7 @@ const Analytics: React.FC = () => {
                     .sort(([,a], [,b]) => b.count - a.count);
                   
                   return (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {sortedEntries.map(([key, stats], index) => {
                         const { emoji, displayName } = chartView === 'umbrella' 
                           ? getUmbrellaDisplayInfo(key)
@@ -605,9 +605,9 @@ const Analytics: React.FC = () => {
                         return (
                           <div 
                             key={key} 
-                            className={`flex items-center justify-between p-3 bg-tertiary rounded-lg transition-colors duration-200 ${
+                            className={`flex items-center justify-between p-2 bg-secondary rounded-lg transition-all duration-200 ${
                               hasSpecificTags 
-                                ? 'hover:bg-gray-600 cursor-pointer hover:border-accent-blue border-2 border-transparent' 
+                                ? 'hover:bg-gray-600 cursor-pointer hover:scale-105' 
                                 : 'hover:bg-gray-700'
                             }`}
                             onClick={() => {
@@ -617,25 +617,23 @@ const Analytics: React.FC = () => {
                               }
                             }}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
                               <div 
-                                className="w-4 h-4 rounded-full flex-shrink-0"
+                                className="w-3 h-3 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: colors[index] }}
                               ></div>
-                              <div>
-                                <div className="font-medium text-primary flex items-center gap-2">
-                                  {emoji} {displayName}
+                              <div className="truncate">
+                                <div className="font-medium text-sm text-primary flex items-center gap-1">
+                                  <span>{emoji}</span>
+                                  <span className="truncate">{displayName}</span>
                                   {hasSpecificTags && (
                                     <span className="text-xs text-accent-blue">→</span>
                                   )}
                                 </div>
-                                <div className="text-xs text-secondary">
-                                  Avg: {Math.round(stats.average_duration)}m
-                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="font-bold text-accent-blue">
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-bold text-sm text-accent-blue">
                                 {stats.count}
                               </div>
                               <div className="text-xs text-secondary">
@@ -646,10 +644,10 @@ const Analytics: React.FC = () => {
                         );
                       })}
                       
-                      {chartView === 'umbrella' && (
-                        <div className="mt-6 p-4 bg-tertiary rounded-lg border border-accent-blue border-opacity-30">
-                          <p className="text-sm text-secondary text-center">
-                            💡 <span className="font-medium">Tip:</span> Click on any slice to see detailed breakdown
+                      {chartView === 'umbrella' && sortedEntries.length > 0 && (
+                        <div className="mt-3 p-2 bg-secondary rounded border border-accent-blue border-opacity-20">
+                          <p className="text-xs text-secondary text-center">
+                            💡 Click categories to drill down
                           </p>
                         </div>
                       )}
@@ -663,22 +661,22 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Trend Chart - Full Width Beautiful Card */}
-      <div className="metric-card">
-        <div className="flex items-center mb-6">
+      <div className="bg-secondary border border-light rounded-xl p-6 shadow-md transition-all duration-300 hover:shadow-lg">
+        <div className="flex items-center mb-4">
           <div className="p-2 bg-gradient-to-r from-accent-purple to-accent-yellow rounded-lg mr-3">
             <ChartBarIcon className="h-6 w-6 text-white" />
           </div>
           <h3 className="text-xl font-bold gradient-text">📊 Daily Trends Over Time</h3>
         </div>
-        <div className="h-96 bg-secondary rounded-lg p-4">
+        <div className="h-96 bg-tertiary rounded-lg p-4">
           <Line data={trendChartData} options={chartOptions} />
         </div>
       </div>
 
       {/* Category Stats Table - Modern Dark Design */}
       {analyticsData?.category_analytics && (
-        <div className="metric-card">
-          <div className="flex items-center mb-6">
+        <div className="bg-secondary border border-light rounded-xl p-6 shadow-md transition-all duration-300 hover:shadow-lg">
+          <div className="flex items-center mb-4">
             <div className="p-2 bg-gradient-to-r from-accent-yellow to-accent-green rounded-lg mr-3">
               <ChartBarIcon className="h-6 w-6 text-white" />
             </div>
