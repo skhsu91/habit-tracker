@@ -45,6 +45,7 @@
 - **Agent Coordination**: Need for multi-agent workflow guidelines → **PR #8**: Added AGENT_WORKFLOW.md with git commands and local task tracking (Aug 27, 2024)
 - **All Habits Color Palette**: Bright, harsh category tag colors didn't match app's sophisticated dark theme → Enhanced with muted gradients, subtle shadows, gradient text effects, and improved card styling for better visual harmony (Dec 19, 2024)
 - **Analytics UI Issues**: Module spacing inconsistent with Overview + "Back to Overview" button styling poor → Fixed spacing to match Overview (space-y-6) and upgraded button to use gradient design system (Jan 22, 2025)
+- **Data Source Migration**: Need reliable primary database instead of Google Sheets CSV → **PR #9**: Integrated Supabase PostgreSQL as primary with Google Sheets fallback and secure environment variable management (Aug 27, 2024)
 
 ## 📋 **Current Priorities**
 
