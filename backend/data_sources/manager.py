@@ -4,6 +4,7 @@ from .base import DataSource, HabitEvent
 from .mock_data import MockDataSource
 from .google_sheets import GoogleSheetsDataSource
 from .simple_sheets import SimpleGoogleSheetsDataSource
+from .supabase_source import SupabaseDataSource
 from .google_calendar import GoogleCalendarSource
 import os
 import sys
@@ -26,6 +27,20 @@ class DataSourceManager:
         mock_source = MockDataSource()
         self.sources.append(mock_source)
         
+        # Try to add Supabase (PostgreSQL) as primary source
+        try:
+            supabase_source = SupabaseDataSource()
+            self.sources.append(supabase_source)
+            print("✅ Added Supabase PostgreSQL source")
+            
+            # Set Supabase as primary if configured as default
+            if DEFAULT_DATA_SOURCE == "supabase":
+                self.primary_source = supabase_source
+                print("🗄️  Set Supabase as primary data source")
+            
+        except Exception as e:
+            print(f"❌ Failed to initialize Supabase source: {e}")
+        
         # Try to add Simple Google Sheets (CSV-based, no auth needed)
         # Use config file instead of environment variable
         sheet_id = GOOGLE_SHEETS_ID
@@ -36,11 +51,11 @@ class DataSourceManager:
                 self.sources.append(simple_sheets_source)
                 print(f"✅ Added Simple Google Sheets source with ID: {sheet_id}")
                 
-                # Set Google Sheets as primary source if configured as default
-                if DEFAULT_DATA_SOURCE == "simple_google_sheets":
+                # Set Google Sheets as primary source if configured as default OR if Supabase failed
+                if DEFAULT_DATA_SOURCE == "simple_google_sheets" or (DEFAULT_DATA_SOURCE == "supabase" and not self.primary_source):
                     self.primary_source = simple_sheets_source
-                    print("📊 Set Simple Google Sheets as primary data source")
-                else:
+                    print("📊 Set Simple Google Sheets as primary data source (fallback)" if DEFAULT_DATA_SOURCE == "supabase" else "📊 Set Simple Google Sheets as primary data source")
+                elif not self.primary_source:
                     self.primary_source = mock_source
                     print("🧪 Using mock data as primary source (check config.py to change)")
                     
@@ -49,7 +64,8 @@ class DataSourceManager:
                 self.primary_source = mock_source
         else:
             print("⚠️  No Google Sheets ID configured")
-            self.primary_source = mock_source
+            if not self.primary_source:
+                self.primary_source = mock_source
         
         # Try to add full Google Sheets API if configured with service account
         credentials_path = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE')
