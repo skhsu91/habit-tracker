@@ -17,27 +17,34 @@ Setup instructions and configuration documentation:
 
 ### **In `/docs/` Directory:**
 - **`README.md`** - This documentation index
-- **`SESSION_HISTORY.md`** - Complete development session history and progress
+- **`PROJECT_STATUS.md`** - Living document with current state, priorities, and development context
 
 ### **In Project Root:**
 - **`README.md`** - Main project overview and quick start guide
 
 ## 🎯 Quick Reference
 
-### **Need to Set Up the App?**
-1. Follow main `README.md` for basic setup
-2. Check `docs/setup/CONFIGURATION_GUIDE.md` for configuration details
-3. Use `docs/setup/GOOGLE_CALENDAR_SETUP.md` for calendar integration
+### **🚀 Getting Started**
+- **First Time Setup**: Follow main [README.md](../README.md) for installation
+- **Configuration**: [CONFIGURATION_GUIDE.md](setup/CONFIGURATION_GUIDE.md) for config management
+- **Google Calendar**: [GOOGLE_CALENDAR_SETUP.md](setup/GOOGLE_CALENDAR_SETUP.md) for OAuth setup
 
-### **Want to Understand the Features?**
-1. See `docs/prds/TAGGING_SYSTEM_PRD.md` for tagging system details
-2. Check `SESSION_HISTORY.md` for complete feature development history
+### **🔍 Understanding the System**
+- **Current Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - What's working and priorities
+- **Tagging System**: [TAGGING_SYSTEM_PRD.md](prds/TAGGING_SYSTEM_PRD.md) - Hierarchical tag design
+- **Code Changes**: Git commit history for detailed development timeline
 
-### **Working on Development?**
-1. Reference `SESSION_HISTORY.md` for current status and todo list
-2. Use configuration guides for environment setup
-3. Follow PRDs for feature specifications
+### **⚙️ Development Workflow**
+1. **Check Current State**: [PROJECT_STATUS.md](PROJECT_STATUS.md) for priorities and context
+2. **Environment Setup**: [Configuration Guide](setup/CONFIGURATION_GUIDE.md) 
+3. **Feature Specs**: [PRDs directory](prds/) for technical requirements
+4. **API Testing**: http://localhost:8000/docs for interactive API docs
+
+### **🐛 Troubleshooting**
+- **Configuration Issues**: [CONFIGURATION_GUIDE.md](setup/CONFIGURATION_GUIDE.md)
+- **OAuth Problems**: [GOOGLE_CALENDAR_SETUP.md](setup/GOOGLE_CALENDAR_SETUP.md)
+- **Development Context**: [PROJECT_STATUS.md](PROJECT_STATUS.md) for known issues and solutions
 
 ---
 
-*Documentation organized January 16, 2025 for better project navigation*
+*Documentation organized August 27, 2024 for better project navigation*
