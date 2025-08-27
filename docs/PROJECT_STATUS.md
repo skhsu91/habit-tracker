@@ -51,6 +51,7 @@
 - **Secret Management Scalability**: Need flexible secret management for future enterprise deployment → **PR #13**: Built future-ready secret management supporting .env files, AWS Secrets Manager, and Azure Key Vault with gradual migration path (Aug 27, 2024)
 - **Analytics Dashboard Padding**: Time by Category and Activity Distribution sections had inconsistent padding and wasted space → Redesigned with consistent padding (p-6), compact Activity Distribution layout with horizontal flexbox design, smaller chart heights (h-64), and improved space utilization (Jan 22, 2025)
 - **Google Calendar Integration**: Complete OAuth setup and timezone-aware event display → **PR #14**: Implemented Google Calendar OAuth flow, specific calendar targeting, timezone conversion, and frontend integration for "Planned for Today" section (Aug 27, 2024)
+- **Product Requirements Documentation**: Added comprehensive PRDs for strategic planning → **PR #18**: Created detailed PRDs for habit creation/management and mobile app deployment with technical specifications, implementation phases, and success metrics (Jan 22, 2025)
 
 ## 📋 **Current Priorities**
 
@@ -76,7 +77,10 @@
 /Users/andyhsu/code/habit-tracker/
 ├── docs/
 │   ├── PROJECT_STATUS.md           # This file - living project status
-│   ├── prds/TAGGING_SYSTEM_PRD.md  # Tag system design specification
+│   ├── prds/
+│   │   ├── TAGGING_SYSTEM_PRD.md   # Tag system design specification
+│   │   ├── HABIT_CREATION_PRD.md   # User habit creation & management
+│   │   └── MOBILE_APP_DEPLOYMENT_PRD.md # Mobile transformation & app store deployment
 │   └── setup/
 │       ├── CONFIGURATION_GUIDE.md  # Config file documentation
 │       └── GOOGLE_CALENDAR_SETUP.md # OAuth setup instructions
