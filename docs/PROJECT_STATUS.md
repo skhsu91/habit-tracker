@@ -43,6 +43,7 @@
 - **Backend Startup**: Dependency and import errors → Proper venv setup and config imports
 - **Documentation Overlap**: README duplication → **PR #7**: Focused documentation hierarchy (Aug 27, 2024)
 - **Agent Coordination**: Need for multi-agent workflow guidelines → **PR #8**: Added AGENT_WORKFLOW.md with git commands and local task tracking (Aug 27, 2024)
+- **Analytics UI Issues**: Module spacing inconsistent with Overview + "Back to Overview" button styling poor → Fixed spacing to match Overview (space-y-6) and upgraded button to use gradient design system (Jan 22, 2025)
 
 ## 📋 **Current Priorities**
 

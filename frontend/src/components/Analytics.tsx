@@ -461,7 +461,7 @@ const Analytics: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header with Time Range Selector - Beautiful Dark Mode */}
       <div className="stat-card">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -526,10 +526,10 @@ const Analytics: React.FC = () => {
                   setChartView('umbrella');
                   setSelectedUmbrella(null);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-tertiary hover:bg-gray-600 rounded-lg transition-colors duration-200 text-secondary hover:text-primary"
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-semibold rounded-lg transition-all duration-300 shadow-sm hover:shadow-md hover:transform hover:scale-105 border border-transparent hover:border-blue-400"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
-                <span className="text-sm font-medium">Back to Overview</span>
+                <span>Back to Overview</span>
               </button>
             )}
           </div>
