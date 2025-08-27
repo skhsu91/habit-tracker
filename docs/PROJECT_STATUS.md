@@ -48,6 +48,7 @@
 - **Data Source Migration**: Need reliable primary database instead of Google Sheets CSV → **PR #9**: Integrated Supabase PostgreSQL as primary with Google Sheets fallback and secure environment variable management (Aug 27, 2024)
 - **Shell Compatibility Issues**: Zsh command errors and bash-specific syntax causing problems → **PR #12**: Created POSIX-compliant scripts and shell-agnostic documentation for universal compatibility (Aug 27, 2024)
 - **Secret Management Scalability**: Need flexible secret management for future enterprise deployment → **PR #13**: Built future-ready secret management supporting .env files, AWS Secrets Manager, and Azure Key Vault with gradual migration path (Aug 27, 2024)
+- **Analytics Dashboard Padding**: Time by Category and Activity Distribution sections had inconsistent padding and wasted space → Redesigned with consistent padding (p-6), compact Activity Distribution layout with horizontal flexbox design, smaller chart heights (h-64), and improved space utilization (Jan 22, 2025)
 
 ## 📋 **Current Priorities**
 
