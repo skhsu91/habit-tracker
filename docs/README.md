@@ -18,6 +18,7 @@ Setup instructions and configuration documentation:
 ### **In `/docs/` Directory:**
 - **`README.md`** - This documentation index
 - **`PROJECT_STATUS.md`** - Living document with current state, priorities, and development context
+- **`AGENT_WORKFLOW.md`** - Git workflow guidelines and multi-agent coordination strategies
 
 ### **In Project Root:**
 - **`README.md`** - Main project overview and quick start guide
@@ -35,10 +36,11 @@ Setup instructions and configuration documentation:
 - **Code Changes**: Git commit history for detailed development timeline
 
 ### **⚙️ Development Workflow**
-1. **Check Current State**: [PROJECT_STATUS.md](PROJECT_STATUS.md) for priorities and context
-2. **Environment Setup**: [Configuration Guide](setup/CONFIGURATION_GUIDE.md) 
-3. **Feature Specs**: [PRDs directory](prds/) for technical requirements
-4. **API Testing**: http://localhost:8000/docs for interactive API docs
+1. **Agent Coordination**: [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) for git workflow and coordination strategies
+2. **Check Current State**: [PROJECT_STATUS.md](PROJECT_STATUS.md) for priorities and context
+3. **Environment Setup**: [Configuration Guide](setup/CONFIGURATION_GUIDE.md) 
+4. **Feature Specs**: [PRDs directory](prds/) for technical requirements
+5. **API Testing**: http://localhost:8000/docs for interactive API docs
 
 ### **🐛 Troubleshooting**
 - **Configuration Issues**: [CONFIGURATION_GUIDE.md](setup/CONFIGURATION_GUIDE.md)

@@ -34,12 +34,15 @@
 3. **Tab-Specific APIs**: Better performance, cleaner frontend code, easier caching
 4. **Hierarchical Tagging**: Structured data analysis while maintaining flexibility
 5. **Server-Side Filtering**: Improved performance, consistent sorting, better UX
+6. **Living Documentation**: PROJECT_STATUS.md provides context git history cannot capture
 
-### **Recent Problem Solving:**
+### **Recent Problem Solving & PRs:**
 - **Mock Data Issue**: App was using mock data instead of real Google Sheets → Fixed via config file
-- **Button Sizing**: Connect Calendar button too large → Matched design system patterns
-- **Documentation Chaos**: Multiple overlapping session docs → Consolidated to single living doc
+- **Button Sizing**: Connect Calendar button too large → Matched design system patterns  
+- **Documentation Structure**: Multiple overlapping README files → **PR #7**: Streamlined with clear separation of concerns
 - **Backend Startup**: Dependency and import errors → Proper venv setup and config imports
+- **Documentation Overlap**: README duplication → **PR #7**: Focused documentation hierarchy (Aug 27, 2024)
+- **Agent Coordination**: Need for multi-agent workflow guidelines → **PR #8**: Added AGENT_WORKFLOW.md with git commands and local task tracking (Aug 27, 2024)
 
 ## 📋 **Current Priorities**
 
