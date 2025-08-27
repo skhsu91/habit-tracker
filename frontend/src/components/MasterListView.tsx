@@ -174,7 +174,7 @@ const MasterListView: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary gradient-text mb-2">📋 All Habits</h2>
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center">
-                <div className="w-2 h-2 bg-accent-blue rounded-full mr-2"></div>
+                <div className="w-2 h-2 bg-accent-blue rounded-full mr-2 shadow-sm shadow-accent-blue/50"></div>
                 <span className="text-secondary">
                   <span className="font-bold text-accent-blue">{habitsData?.filtered_count || 0}</span> of <span className="font-bold">{habitsData?.total_count || 0}</span> habits
                 </span>
@@ -182,7 +182,7 @@ const MasterListView: React.FC = () => {
               {(habitsData?.total_count || 0) > 0 && (
                 <>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-accent-green rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-accent-green rounded-full mr-2 shadow-sm shadow-accent-green/50"></div>
                     <span className="text-secondary">
                       <span className="font-bold text-accent-green">
                         {Math.round((habitsData?.habits || []).reduce((sum, h) => sum + h.duration, 0) / 60 * 10) / 10}h
@@ -190,7 +190,7 @@ const MasterListView: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-accent-purple rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-accent-purple rounded-full mr-2 shadow-sm shadow-accent-purple/50"></div>
                     <span className="text-secondary">
                       <span className="font-bold text-accent-purple">{getAllCategories().length}</span> categories
                     </span>
@@ -271,12 +271,12 @@ const MasterListView: React.FC = () => {
       {/* Habits List - Dark Mode Cards with Smooth Animations */}
       <div key={animationKey} className="space-y-4 transition-all duration-500 ease-in-out">
         {(habitsData?.habits?.length || 0) === 0 ? (
-          <div className="event-card text-center py-12">
-            {/* Fixed: Smaller, more elegant icon instead of giant magnifying glass */}
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-accent-blue to-accent-purple rounded-full flex items-center justify-center">
-              <FunnelIcon className="h-8 w-8 text-white" />
+          <div className="event-card text-center py-12 border-2 border-dashed border-accent-blue/30">
+            {/* More elegant icon with subtle glow effect */}
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-accent-blue/80 to-accent-purple/80 rounded-full flex items-center justify-center shadow-lg shadow-accent-blue/20">
+              <FunnelIcon className="h-8 w-8 text-white drop-shadow-sm" />
             </div>
-            <h3 className="text-lg font-medium text-primary mb-2">No habits found</h3>
+            <h3 className="text-lg font-medium text-transparent bg-clip-text bg-gradient-to-r from-accent-blue to-accent-purple mb-2">No habits found</h3>
             <p className="text-muted">
               {(habitsData?.total_count || 0) === 0 
                 ? "No habits have been recorded yet." 
@@ -288,10 +288,12 @@ const MasterListView: React.FC = () => {
           (habitsData?.habits || []).map((habit, index) => (
             <div 
               key={habit.id} 
-              className="event-card hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.01] group animate-fade-in"
+              className="event-card hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.01] group animate-fade-in border-l-4 border-l-accent-blue hover:border-l-accent-green"
               style={{
                 animationDelay: `${index * 50}ms`,
-                '--tw-animate-duration': '400ms'
+                '--tw-animate-duration': '400ms',
+                background: 'linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-accent) 100%)',
+                borderLeftColor: 'var(--accent-blue)'
               } as React.CSSProperties}
             >
               {/* Much more useful and organized layout */}
@@ -299,14 +301,14 @@ const MasterListView: React.FC = () => {
                 {/* Left side: Main habit info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-3">
-                    {/* Habit Name with better typography */}
-                    <h3 className="text-lg font-bold gradient-text truncate group-hover:text-accent-blue transition-colors">
+                    {/* Habit Name with better typography and gradient effect */}
+                    <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 truncate group-hover:from-green-400 group-hover:to-blue-400 transition-all duration-300">
                       {habit.name}
                     </h3>
-                    {/* Quick visual indicator for habit duration */}
-                    <div className="ml-4 text-right">
+                    {/* Quick visual indicator for habit duration with better styling */}
+                    <div className="ml-4 text-right bg-gradient-to-br from-accent-green/20 to-accent-blue/20 px-3 py-2 rounded-lg border border-accent-green/30">
                       <div className="text-sm text-accent-green font-bold">{formatDuration(habit.duration)}</div>
-                      <div className="text-xs text-muted">duration</div>
+                      <div className="text-xs text-accent-green/70">duration</div>
                     </div>
                   </div>
                   
@@ -314,7 +316,7 @@ const MasterListView: React.FC = () => {
                   <div className="flex items-center gap-4 text-sm text-secondary mb-3">
                     {/* Date with better formatting and color coding */}
                     <div className="flex items-center">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${getDateColor(habit.date).replace('text-', 'bg-')}`}></div>
+                      <div className={`w-2 h-2 rounded-full mr-2 shadow-sm ${getDateColor(habit.date).replace('text-', 'bg-')} ${getDateColor(habit.date).replace('text-', 'shadow-')}/50`}></div>
                       <span className={`font-medium ${getDateColor(habit.date)}`}>{formatDate(habit.date)}</span>
                     </div>
                     
@@ -341,54 +343,54 @@ const MasterListView: React.FC = () => {
                     <div className="mt-2 pt-2">
                       <div className="flex flex-wrap gap-4">
                         {habit.categories.map((category, index) => {
-                        // PRD-compliant tag color system based on hierarchy
-                        // Umbrella tags (blue) → Specific tags (green) → Contextual tags (purple)
+                        // Sophisticated tag color system with muted gradients that complement the dark theme
+                        // Colors are carefully chosen to harmonize with the app's --accent-* palette
                         const getCategoryColor = (tagName: string): string => {
-                          // Check if it's an umbrella tag
+                          // Check if it's an umbrella tag - use deeper, more sophisticated colors
                           if (UMBRELLA_TAGS.includes(tagName as any)) {
                             const umbrellaColors: { [key: string]: string } = {
-                              'health': 'from-blue-500 to-blue-600',
-                              'food': 'from-yellow-500 to-orange-500', 
-                              'home': 'from-indigo-500 to-indigo-600',
-                              'transportation': 'from-cyan-500 to-cyan-600'
+                              'health': 'from-blue-400 to-blue-500',
+                              'food': 'from-amber-400 to-orange-400', 
+                              'home': 'from-indigo-400 to-indigo-500',
+                              'transportation': 'from-cyan-400 to-cyan-500'
                             };
-                            return umbrellaColors[tagName] || 'from-blue-500 to-blue-600';
+                            return umbrellaColors[tagName] || 'from-blue-400 to-blue-500';
                           }
                           
-                          // Check if it's a contextual tag  
+                          // Check if it's a contextual tag - use muted purple that matches --accent-purple
                           if (CONTEXTUAL_TAGS.includes(tagName as any)) {
-                            return 'from-purple-500 to-purple-600';
+                            return 'from-purple-400 to-purple-500';
                           }
                           
-                          // Specific tags - color by umbrella category
+                          // Specific tags - use softer, more harmonious colors
                           const specificTagColors: { [key: string]: string } = {
-                            // Health specific tags
-                            'exercise': 'from-green-500 to-green-600',
-                            'workout': 'from-emerald-500 to-emerald-600',
+                            // Health specific tags - green family that complements --accent-green
+                            'exercise': 'from-emerald-400 to-green-500',
+                            'workout': 'from-green-400 to-emerald-500',
                             
-                            // Food specific tags  
-                            'cooking': 'from-orange-500 to-red-500',
-                            'meal-prep': 'from-yellow-600 to-orange-600',
-                            'meal': 'from-amber-500 to-amber-600',
-                            'takeout': 'from-red-500 to-red-600',
-                            'grocery': 'from-yellow-500 to-yellow-600',
+                            // Food specific tags - warm tones that are easier on the eyes
+                            'cooking': 'from-orange-400 to-amber-500',
+                            'meal-prep': 'from-amber-400 to-orange-400',
+                            'meal': 'from-yellow-400 to-amber-400',
+                            'takeout': 'from-red-400 to-pink-400',
+                            'grocery': 'from-lime-400 to-yellow-400',
                             
-                            // Home specific tags
-                            'cleaning': 'from-teal-500 to-teal-600',
-                            'laundry': 'from-sky-500 to-sky-600', 
-                            'bathroom': 'from-slate-500 to-slate-600',
+                            // Home specific tags - cool tones that feel calm and organized
+                            'cleaning': 'from-teal-400 to-cyan-400',
+                            'laundry': 'from-sky-400 to-blue-400', 
+                            'bathroom': 'from-slate-400 to-gray-400',
                             
-                            // Transportation specific tags
-                            'public-transit': 'from-blue-600 to-indigo-600',
-                            'walking-errand': 'from-green-600 to-teal-600',
-                            'rideshare': 'from-gray-500 to-gray-600',
+                            // Transportation specific tags - blues that match the app's blue accent
+                            'public-transit': 'from-blue-400 to-indigo-400',
+                            'walking-errand': 'from-emerald-400 to-teal-400',
+                            'rideshare': 'from-gray-400 to-slate-400',
                             
-                            // Legacy/extensibility tags
-                            'learning': 'from-violet-500 to-violet-600',
-                            'career-development': 'from-indigo-600 to-purple-600'
+                            // Legacy/extensibility tags - sophisticated purples and blues
+                            'learning': 'from-violet-400 to-purple-400',
+                            'career-development': 'from-indigo-400 to-violet-400'
                           };
                           
-                          return specificTagColors[tagName] || 'from-gray-500 to-gray-600';
+                          return specificTagColors[tagName] || 'from-slate-400 to-gray-400';
                         };
                         
                         // Get tag type for hierarchy display
@@ -429,12 +431,12 @@ const MasterListView: React.FC = () => {
                 </div>
               </div>
               
-              {/* Add a subtle progress/completion indicator */}
-              <div className="mt-4 pt-3 border-t border-light flex items-center justify-between text-xs text-muted">
-                <span>Habit ID: {habit.id.slice(0, 8)}...</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-accent-green rounded-full"></div>
-                  <span>Completed</span>
+              {/* Add a subtle progress/completion indicator with better styling */}
+              <div className="mt-4 pt-3 border-t border-accent-blue/20 flex items-center justify-between text-xs">
+                <span className="text-accent-blue/60 font-medium">ID: {habit.id.slice(0, 8)}...</span>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-accent-green/20 to-accent-green/30 px-2 py-1 rounded-full">
+                  <div className="w-2 h-2 bg-accent-green rounded-full shadow-sm shadow-accent-green/50"></div>
+                  <span className="text-accent-green/90 font-medium">Completed</span>
                 </div>
               </div>
             </div>
