@@ -22,16 +22,19 @@ const MasterListView: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'name'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
-  // Animation key to trigger smooth transitions when filters change
-  const [animationKey, setAnimationKey] = useState(0);
+  // Track if this is the initial mount
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
     loadHabits();
+    setIsInitialMount(false);
   }, []);
 
-  // Server-side filtering: reload data when filters change
+  // Server-side filtering: reload data when filters change (skip on initial mount)
   useEffect(() => {
-    loadHabits();
+    if (!isInitialMount) {
+      loadHabits();
+    }
   }, [searchTerm, selectedCategory, sortBy, sortOrder]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadHabits = async () => {
@@ -48,9 +51,6 @@ const MasterListView: React.FC = () => {
       });
       
       setHabitsData(data);
-      
-      // Trigger animation when data changes
-      setAnimationKey(prev => prev + 1);
     } catch (err) {
       setError(err instanceof APIError ? err.message : 'Failed to load habits');
     } finally {
@@ -138,10 +138,46 @@ const MasterListView: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !habitsData) {
+    // Skeleton loading state that matches the actual layout
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="stat-card">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div>
+              <div className="h-8 w-48 bg-gray-700 rounded-lg mb-2 animate-pulse"></div>
+              <div className="h-4 w-64 bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Filter skeleton */}
+          <div className="space-y-6 mt-10">
+            <div className="h-14 bg-gray-700 rounded-xl animate-pulse"></div>
+            <div className="flex gap-4">
+              <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
+              <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
+              <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Habit cards skeleton */}
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="event-card border-l-4 border-l-accent-blue">
+              <div className="animate-pulse">
+                <div className="h-6 w-3/4 bg-gray-700 rounded mb-3"></div>
+                <div className="h-4 w-1/2 bg-gray-700 rounded mb-3"></div>
+                <div className="flex gap-2 mt-2">
+                  <div className="h-8 w-20 bg-gray-700 rounded-full"></div>
+                  <div className="h-8 w-24 bg-gray-700 rounded-full"></div>
+                  <div className="h-8 w-16 bg-gray-700 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -166,7 +202,7 @@ const MasterListView: React.FC = () => {
   const categories = getAllCategories();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-fast">
       {/* Header with Stats - Dark Mode Card */}
       <div className="stat-card">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -269,7 +305,7 @@ const MasterListView: React.FC = () => {
       </div>
 
       {/* Habits List - Dark Mode Cards with Smooth Animations */}
-      <div key={animationKey} className="space-y-4 transition-all duration-500 ease-in-out">
+      <div className="space-y-4">
         {(habitsData?.habits?.length || 0) === 0 ? (
           <div className="event-card text-center py-12 border-2 border-dashed border-accent-blue/30">
             {/* More elegant icon with subtle glow effect */}
@@ -288,10 +324,8 @@ const MasterListView: React.FC = () => {
           (habitsData?.habits || []).map((habit, index) => (
             <div 
               key={habit.id} 
-              className="event-card hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.01] group animate-fade-in border-l-4 border-l-accent-blue hover:border-l-accent-green"
+              className="event-card hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.01] group border-l-4 border-l-accent-blue hover:border-l-accent-green"
               style={{
-                animationDelay: `${index * 50}ms`,
-                '--tw-animate-duration': '400ms',
                 background: 'linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-accent) 100%)',
                 borderLeftColor: 'var(--accent-blue)'
               } as React.CSSProperties}
