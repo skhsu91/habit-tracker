@@ -227,6 +227,20 @@ Create production environment files:
 - [ ] Advanced analytics and insights
 - [ ] Integrations with fitness trackers
 
+## 📚 Documentation
+
+Comprehensive documentation is organized in the `/docs/` directory:
+
+- **📋 Setup & Configuration**: `docs/setup/` - Configuration guides and setup instructions
+- **📋 Product Requirements**: `docs/prds/` - Technical specifications and design documents
+- **📋 Development History**: `docs/SESSION_HISTORY.md` - Complete session progress and todo list
+
+### Quick Links:
+- [Configuration Guide](docs/setup/CONFIGURATION_GUIDE.md) - Centralized configuration system
+- [Google Calendar Setup](docs/setup/GOOGLE_CALENDAR_SETUP.md) - OAuth integration guide
+- [Tagging System PRD](docs/prds/TAGGING_SYSTEM_PRD.md) - Hierarchical tagging design
+- [Session History](docs/SESSION_HISTORY.md) - Development progress and current status
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -245,3 +259,4 @@ For questions or issues:
 1. Check the [Issues](../../issues) page
 2. Create a new issue with details
 3. Review the [API documentation](http://localhost:8000/docs) when running locally
+4. See [Session History](docs/SESSION_HISTORY.md) for current development status

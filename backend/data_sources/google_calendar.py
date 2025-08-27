@@ -81,8 +81,7 @@ class GoogleCalendarSource(DataSource):
     """Google Calendar data source for fetching upcoming events"""
     
     def __init__(self):
-        super().__init__()
-        self.name = "google_calendar"
+        super().__init__("google_calendar")
         self.credentials_file = "google_calendar_credentials.json"
         self.token_file = "google_calendar_token.json"
         self.scopes = ['https://www.googleapis.com/auth/calendar.readonly']
@@ -133,6 +132,18 @@ class GoogleCalendarSource(DataSource):
                 print(f"Error saving token: {e}")
         
         return creds
+    
+    async def fetch_all_habits(self) -> List[HabitEvent]:
+        """Fetch all habit events (Calendar doesn't provide habit events directly)"""
+        return []  # Google Calendar is not used for habit tracking, only for upcoming events
+    
+    async def fetch_habits_by_date_range(self, start_date: datetime, end_date: datetime) -> List[HabitEvent]:
+        """Fetch habits within a specific date range (Calendar doesn't provide habit events)"""
+        return []  # Google Calendar is not used for habit tracking, only for upcoming events
+    
+    async def is_available(self) -> bool:
+        """Check if Google Calendar API is available and authenticated"""
+        return await self.test_connection()
     
     async def get_events(self, start_date: datetime, end_date: datetime) -> List[HabitEvent]:
         """Fetch events from Google Calendar (not used for habits, but kept for interface compatibility)"""

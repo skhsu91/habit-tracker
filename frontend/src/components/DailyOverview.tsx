@@ -386,7 +386,7 @@ const DailyOverview: React.FC = () => {
                 <button
                   onClick={handleCalendarAuth}
                   disabled={calendarAuthLoading}
-                  className="flex items-center space-x-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-xs font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md hover:transform hover:scale-105 border border-transparent hover:border-blue-400"
                 >
                   {calendarAuthLoading ? (
                     <>
@@ -395,7 +395,7 @@ const DailyOverview: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <CalendarIcon className="h-4 w-4" />
+                      <CalendarIcon className="h-3 w-3" />
                       <span>Connect Calendar</span>
                     </>
                   )}
@@ -420,8 +420,8 @@ const DailyOverview: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <div className="text-center py-6">
+            <CalendarIcon className="h-8 w-8 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 mb-3">No events planned for today</p>
             {calendarAuthStatus && !calendarAuthStatus.authenticated && (
               <p className="text-sm text-gray-400">
