@@ -236,6 +236,17 @@ For detailed setup, configuration, and development information, see the [documen
 - [Configuration Guide](docs/setup/CONFIGURATION_GUIDE.md) - Setup and config management
 - [Documentation Index](docs/README.md) - Complete documentation navigation
 
+### 🤖 For LLMs and AI Assistants
+
+**[cursor.json](cursor.json)** - Essential context file containing:
+- Project memories and workflow patterns
+- Security protocols and development guidelines  
+- Architecture decisions and technical context
+- Git workflows and documentation standards
+- Common issues and their solutions
+
+*This file provides comprehensive context for any LLM working on this project, ensuring consistent development practices and avoiding common pitfalls.*
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

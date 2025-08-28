@@ -1,0 +1,186 @@
+{
+  "llm_context": {
+    "project": "habit-tracker",
+    "description": "A modern, full-stack habit tracking application built with React and FastAPI",
+    "created": "2025-01-22",
+    "version": "1.0",
+    "purpose": "Provides essential context and workflows for any LLM working on this project"
+  },
+  "memories": [
+    {
+      "id": "7438473",
+      "title": "GitHub PR Creation with Complex Descriptions",
+      "content": "For creating GitHub PRs with complex descriptions, use a temporary file to avoid terminal hanging issues: 1) Write description to temp file with `echo \"description\" > pr_desc.txt`, 2) Create PR with `gh pr create --title \"Title\" --body-file pr_desc.txt`, 3) Clean up with `rm pr_desc.txt`. If that fails, fallback to creating PR with simple body then editing: `gh pr create --title \"Title\" --body \"TBD\"` followed by `gh pr edit PR_NUM --body \"Full description\"`.",
+      "category": "git_workflow",
+      "importance": "high"
+    },
+    {
+      "id": "7425011", 
+      "title": "Shell-Agnostic Development Scripts",
+      "content": "Always write shell-agnostic scripts using POSIX syntax to avoid shell-specific errors. Use #!/bin/sh shebang, '. venv/bin/activate' instead of 'source', '[ condition ]' instead of '[[ condition ]]', and 'test -f file && action' for conditional execution. Created shell-agnostic scripts in scripts/ directory (dev-start.sh, dev-stop.sh, setup.sh) and comprehensive documentation in docs/setup/SHELL_COMPATIBILITY.md. This eliminates zsh vs bash compatibility issues and ensures scripts work across all shells.",
+      "category": "development_workflow",
+      "importance": "high"
+    },
+    {
+      "id": "7424614",
+      "title": "Critical Security Protocol for Sensitive Data",
+      "content": "CRITICAL SECURITY PROTOCOL: Never commit sensitive information to git. For any API keys, service role keys, passwords, or secrets: 1) Move sensitive values to environment variables using os.getenv(\"VARIABLE_NAME\"), 2) Create a .env file with actual values (this gets gitignored), 3) Create a .env.example template with placeholder values (safe to commit), 4) Ensure .env files are in .gitignore, 5) Update config files to load from environment variables using python-dotenv. This prevents accidental exposure of credentials in version control while maintaining easy setup for team members.",
+      "category": "security",
+      "importance": "critical"
+    },
+    {
+      "id": "7370785",
+      "title": "Documentation Updates in PRs",
+      "content": "Always include updates to docs/PROJECT_STATUS.md as part of each PR that makes meaningful changes. Before committing any PR, add the change to the \"Recent Problem Solving & PRs\" section with format: \"- **Issue Description**: Problem details → **PR #X**: Solution summary (date)\". This ensures PROJECT_STATUS.md stays current without requiring follow-up PRs. The PROJECT_STATUS.md update should be included in the same commit/PR as the actual changes, not as a separate follow-up. For agent coordination, use docs/AGENT_WORKFLOW.md (git-tracked) for workflow guidelines and docs/.work_status.md (local/gitignored) for optional personal task tracking.",
+      "category": "documentation",
+      "importance": "high"
+    },
+    {
+      "id": "7549710",
+      "title": "Maintain cursor.json with all project memories",
+      "content": "Always update cursor.json whenever creating, updating, or deleting memories. This file serves as the central LLM context repository for the project. When adding new memories, append them to the \"memories\" array in cursor.json with proper id, title, content, category, and importance fields. This ensures all LLMs working on the project have access to the complete knowledge base and maintain consistent development practices.",
+      "category": "memory_management",
+      "importance": "high"
+    }
+  ],
+  "project_context": {
+    "architecture": {
+      "frontend": {
+        "framework": "React + TypeScript",
+        "styling": "Tailwind CSS",
+        "navigation": "State-based (mobile-first for React Native migration)",
+        "charts": "Chart.js",
+        "icons": "@heroicons/react"
+      },
+      "backend": {
+        "framework": "FastAPI + Python",
+        "database": "Supabase PostgreSQL (primary), Google Sheets (fallback)",
+        "authentication": "Google OAuth 2.0 for Calendar",
+        "configuration": "Centralized config.py with environment variables for secrets"
+      }
+    },
+    "data_sources": {
+      "primary": "Supabase PostgreSQL",
+      "fallback": "Simple Google Sheets (CSV export)",
+      "calendar": "Google Calendar API with OAuth",
+      "mock": "Mock data for development"
+    },
+    "features": {
+      "completed": [
+        "Daily Overview with metrics",
+        "Master List View with filtering",
+        "Visual Analytics with charts",
+        "Google Calendar integration",
+        "Tag validation system",
+        "Mobile-first responsive design",
+        "Dark mode UI"
+      ],
+      "in_progress": [
+        "Analytics filtering UI",
+        "Habit creation interface",
+        "Data export functionality"
+      ]
+    }
+  },
+  "development_workflows": {
+    "git_commands": {
+      "session_start": [
+        "git status",
+        "git pull origin main",
+        "git log --oneline -5"
+      ],
+      "during_development": [
+        "git add .",
+        "git commit -m \"descriptive message\"",
+        "git push origin feature-branch"
+      ],
+      "before_pr": [
+        "git rebase main",
+        "git push -f origin feature-branch"
+      ],
+      "after_pr": [
+        "git checkout main",
+        "git pull origin main",
+        "git branch -d feature-branch"
+      ]
+    },
+    "pr_documentation_pattern": "Always update docs/PROJECT_STATUS.md in the same PR as code changes, following format: '- **Issue Description**: Problem details → **PR #X**: Solution summary (date)'"
+  },
+  "security_guidelines": {
+    "never_commit": [
+      "API keys",
+      "Service role keys", 
+      "Passwords",
+      "Access tokens",
+      "Database connection strings with credentials"
+    ],
+    "use_env_vars": [
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "GOOGLE_CLIENT_SECRET",
+      "Any third-party API keys"
+    ],
+    "env_file_structure": {
+      ".env": "Actual secrets (gitignored)",
+      ".env.example": "Template with placeholders (committed)"
+    }
+  },
+  "shell_compatibility": {
+    "shebang": "#!/bin/sh (not #!/bin/bash)",
+    "activation": ". venv/bin/activate (not source venv/bin/activate)",
+    "conditionals": "[ condition ] (not [[ condition ]])",
+    "file_checks": "test -f file && action"
+  },
+  "directory_structure": {
+    "docs/": {
+      "PROJECT_STATUS.md": "Living document with current status and context",
+      "AGENT_WORKFLOW.md": "Git workflow guidelines for multi-agent coordination", 
+      "README.md": "Documentation navigation index",
+      "prds/": "Product Requirements Documents",
+      "setup/": "Configuration and setup guides",
+      ".work_status.md": "Optional local task tracking (gitignored)"
+    },
+    "backend/": {
+      "config.py": "Centralized configuration management",
+      "data_sources/": "Extensible data source implementations",
+      "main.py": "FastAPI application entry point",
+      "venv/": "Python virtual environment"
+    },
+    "frontend/src/": {
+      "components/": "React components with dark mode design",
+      "services/": "API service layer",
+      "types/": "TypeScript type definitions"
+    },
+    "scripts/": {
+      "dev-start.sh": "POSIX-compliant development server startup",
+      "dev-stop.sh": "POSIX-compliant server shutdown",
+      "setup.sh": "POSIX-compliant project setup"
+    }
+  },
+  "api_endpoints": {
+    "tab_specific": {
+      "/api/tabs/overview": "Daily overview with today's habits and metrics",
+      "/api/tabs/habits": "Complete habits list with filtering",
+      "/api/tabs/analytics": "Analytics data with category breakdowns"
+    },
+    "calendar": {
+      "/api/calendar/auth-status": "Google Calendar authentication status",
+      "/api/calendar/auth-url": "Google OAuth authorization URL",
+      "/api/calendar/events/upcoming": "Today's upcoming calendar events",
+      "/api/calendar/debug": "Detailed calendar debugging information"
+    }
+  },
+  "tag_system": {
+    "hierarchy": [
+      "umbrella_tags (required): health, food, home, transportation",
+      "specific_tags (optional): exercise, nutrition, mental-health, etc.",
+      "contextual_tags (optional): self-care, social, mindfulness, learning"
+    ],
+    "validation": "At least one umbrella tag required, kebab-case format enforced"
+  },
+  "common_issues": {
+    "python_env": "Always activate venv: '. venv/bin/activate' before running backend",
+    "port_conflicts": "Use 'pkill -f \"python main.py\"' to kill existing backend processes",
+    "dependency_errors": "Run 'pip install -r requirements.txt' in activated venv",
+    "frontend_modules": "Run 'npm install' in frontend/ if modules missing"
+  }
+}
