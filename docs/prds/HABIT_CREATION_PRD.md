@@ -30,76 +30,181 @@ Enable users to manually create, edit, and manage their own habits through an in
 ## 🔍 **Current State Analysis**
 
 ### **✅ Existing Foundation:**
-- **Database**: Supabase PostgreSQL with `ht-calendar-events` table
-- **Tag System**: Hierarchical validation (umbrella → specific → contextual)
-- **UI Components**: Professional dark mode design system
-- **Data Flow**: Backend APIs serving frontend with proper error handling
-- **Analytics**: Charts and metrics that process habit data
+- **Database**: Supabase PostgreSQL with `ht-calendar-events` table (PRIMARY), Google Sheets CSV fallback, Mock data
+- **AI-Powered Ingestion**: n8n workflow with GPT-4o-mini agent using Google Calendar MCP + Supabase MCP for automated habit processing
+- **Tag System**: Implemented hierarchical validation system in `backend/utils/tag_validation.py` with 4 umbrella categories
+- **UI Components**: Professional dark mode design system with polished components
+- **Data Flow**: Complete FastAPI backend with tab-specific endpoints (`/api/tabs/overview`, `/api/tabs/habits`, `/api/tabs/analytics`) 
+- **Analytics**: Interactive Chart.js analytics with category breakdowns, trends, and server-side filtering
+- **Google Calendar Integration**: OAuth-enabled with timezone-aware event display (both frontend and n8n workflow)
+- **Configuration Management**: Centralized config system with environment variable support for secrets
+
+### **🎯 Enhanced Tagging System Requirements:**
+The current tag system needs significant expansion to track comprehensive lifestyle patterns including:
+- **Financial Impact**: Spending vs. saving behaviors (delivery vs. pickup, public transport vs. driving)
+- **Social Interactions**: Different types of social activities and contexts
+- **Personal Development**: Learning goals (career vs. relationships vs. general knowledge)
+- **Health & Wellness**: Physical activity types, mental health activities
+- **Lifestyle Balance**: Work-life integration, leisure activities, personal enrichment
+- **Transportation Patterns**: Cost-effective vs. convenient transportation choices
+- **Goal Alignment**: Activities that support specific life improvement goals
 
 ### **❌ Current Limitations:**
-- **Read-Only**: Users can only view imported habits from Google Sheets/Calendar
-- **No CRUD Operations**: Cannot create, update, or delete habits manually
-- **Limited Flexibility**: Dependent on external data sources for habit entry
-- **Missing Workflow**: No interface for habit management lifecycle
+- **Single Ingestion Source**: Habits currently only come from AI-powered n8n workflow processing Google Calendar events
+- **No Manual User Input**: Cannot create, update, or delete habits manually through frontend UI
+- **Limited Tag Set**: Current system has only 4 umbrella categories (health, food, home, transportation)
+- **Missing Creation UI**: No frontend interface for habit creation despite backend validation infrastructure
+- **AI Dependency**: All habit ingestion relies on n8n workflow availability and Google Calendar event creation
 
 ### **🎯 Gap Analysis:**
 | Missing Feature | Current State | Desired State |
 |----------------|---------------|---------------|
-| Habit Creation | External import only | User-generated habits |
-| Habit Editing | Not possible | Full CRUD operations |
-| Custom Categories | Fixed tag set | User-guided categorization |
-| Habit Templates | None | Common habit presets |
-| Validation UI | Backend only | Real-time frontend validation |
+| Manual Habit Creation | AI workflow only via Calendar | Frontend UI + AI workflow dual sources |
+| Direct Habit Editing | No CRUD endpoints | Full REST API with PUT/DELETE endpoints |
+| Tag Categories | 4 basic umbrellas | 10 comprehensive lifestyle categories |
+| Ingestion Flexibility | n8n workflow dependency | Multiple ingestion methods (UI, API, n8n) |
+| User Workflow | AI-processed habits only | User-controlled + AI-assisted habit management |
 
 ---
 
 ## 🏗️ **Technical Architecture**
 
-### **Database Schema Changes:**
+### **Current Database Schema (Supabase PostgreSQL):**
 ```sql
--- Extend existing ht-calendar-events table or create new habits table
+-- Current ht-calendar-events table structure (populated by n8n workflow):
+CREATE TABLE "public"."ht-calendar-events" (
+    id TEXT PRIMARY KEY,                          -- Google Calendar event ID or generated UUID
+    name TEXT NOT NULL,                           -- Habit/event name (from Calendar summary)
+    date TEXT NOT NULL,                           -- ISO datetime string (2025-01-14T06:00:00.000Z)
+    participants TEXT[],                          -- Array of participant names (nullable)
+    duration INTEGER NOT NULL,                    -- Duration in minutes
+    categories TEXT[] NOT NULL,                   -- Array of tags/categories (processed by AI)
+    
+    -- Automatically populated by n8n workflow:
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Current indexes:
+CREATE INDEX idx_calendar_events_date ON "ht-calendar-events" (date);
+CREATE INDEX idx_calendar_events_categories ON "ht-calendar-events" USING GIN (categories);
+```
+
+### **Proposed Schema Extensions for Manual Habits:**
+```sql
+-- Required extensions for user-created habits:
 ALTER TABLE "ht-calendar-events" ADD COLUMN IF NOT EXISTS:
-  created_by VARCHAR(50) DEFAULT 'user',           -- 'user' vs 'import'
-  habit_type VARCHAR(20) DEFAULT 'manual',         -- 'manual', 'calendar', 'recurring'
+  created_by VARCHAR(50) DEFAULT 'n8n_ai',         -- 'user', 'n8n_ai', 'calendar_direct'
+  habit_type VARCHAR(20) DEFAULT 'ai_processed',   -- 'manual', 'ai_processed', 'calendar_import'
   is_template BOOLEAN DEFAULT false,               -- For preset habits
   user_id VARCHAR(100),                           -- Future multi-user support
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  is_active BOOLEAN DEFAULT true;                 -- Soft delete capability
+  is_active BOOLEAN DEFAULT true,                 -- Soft delete capability
+  source_reference VARCHAR(200),                  -- Google Calendar event ID or workflow run ID
+  
+  -- Enhanced tagging system:
+  primary_categories TEXT[],                      -- New 10-category system
+  specific_tags TEXT[],                           -- Activity-specific tags
+  context_tags TEXT[],                            -- Lifestyle impact tags
+  social_context TEXT[],                          -- Social situation tags
+  location_tags TEXT[],                           -- Location/setting tags
+  
+  -- AI processing metadata:
+  ai_confidence DECIMAL(3,2),                     -- AI tagging confidence (0.00-1.00)
+  ai_model_version VARCHAR(50),                   -- GPT model used for processing
+  processing_notes TEXT;                          -- AI reasoning/notes
 
--- Indexes for performance
+-- Performance indexes:
 CREATE INDEX IF NOT EXISTS idx_habits_user_active ON "ht-calendar-events" (user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_habits_created_by ON "ht-calendar-events" (created_by);
+CREATE INDEX IF NOT EXISTS idx_habits_primary_categories ON "ht-calendar-events" USING GIN (primary_categories);
+CREATE INDEX IF NOT EXISTS idx_habits_date_active ON "ht-calendar-events" (date, is_active);
+CREATE INDEX IF NOT EXISTS idx_habits_habit_type ON "ht-calendar-events" (habit_type);
 ```
 
 ### **API Endpoints:**
 ```typescript
-// New endpoints to add to backend/main.py
+// MISSING endpoints to add to backend/main.py:
 POST   /api/habits              // Create new habit
 PUT    /api/habits/{id}         // Update existing habit  
 DELETE /api/habits/{id}         // Soft delete habit
 GET    /api/habits/templates    // Get habit templates
 POST   /api/habits/validate     // Validate habit data
 
-// Enhanced existing endpoints
-GET    /api/tabs/habits         // Include user-created habits
-GET    /api/tabs/analytics      // Include user habits in metrics
+// EXISTING endpoints that work well:
+GET    /api/habits              // Get all habits (with optional source filter)
+GET    /api/habits/today        // Get today's habits
+GET    /api/habits/recent       // Get habits from last N days
+GET    /api/tabs/overview       // Complete overview data (daily metrics, recent events, upcoming)
+GET    /api/tabs/habits         // Optimized habits with filtering (search, category, sort, limit)
+GET    /api/tabs/analytics      // Analytics with time range and category filters
+GET    /api/sources             // Available data sources
+GET    /api/calendar/*          // Google Calendar integration endpoints
+
+// Tag validation utilities available in backend/utils/tag_validation.py:
+// - TagValidator.validate_and_normalize()
+// - TagValidator.suggest_tags_for_habit_name()
+// - validate_tags() and normalize_tags() convenience functions
 ```
 
-### **Frontend Components:**
+### **Current Data Ingestion Architecture (n8n Workflow):**
+```
+AI-Powered Habit Processing Pipeline:
+┌─────────────────────────────────┐
+│ Google Calendar                 │
+│ "Habit Tracking" calendar       │
+│ (User creates calendar events)  │
+└─────────────┬───────────────────┘
+              │
+┌─────────────▼───────────────────┐
+│ n8n Workflow Trigger            │
+│ • Polls calendar for new events │
+│ • Webhook/schedule based        │
+└─────────────┬───────────────────┘
+              │
+┌─────────────▼───────────────────┐
+│ Google Calendar MCP             │
+│ • Fetches event details         │
+│ • Provides context to AI        │
+└─────────────┬───────────────────┘
+              │
+┌─────────────▼───────────────────┐
+│ GPT-4o-mini AI Agent            │
+│ • Analyzes event name/details   │
+│ • Applies tagging rules         │
+│ • Determines categories         │
+│ • Extracts participants/duration│
+└─────────────┬───────────────────┘
+              │
+┌─────────────▼───────────────────┐
+│ Supabase MCP                    │
+│ • Inserts processed habits      │
+│ • Updates existing entries      │
+│ • Maintains data consistency    │
+└─────────────┬───────────────────┘
+              │
+┌─────────────▼───────────────────┐
+│ Frontend Display                │
+│ • Reads from Supabase           │
+│ • Shows processed habits        │
+│ • Analytics and insights        │
+└─────────────────────────────────┘
+```
+
+### **Frontend Components (To Be Built):**
 ```
 Habit Creation Flow
-├── HabitCreationForm.tsx       // Main creation interface
-├── TagSelector.tsx             // Interactive tag selection with validation
-├── DurationPicker.tsx          // Time duration input component
+├── HabitCreationForm.tsx       // Main creation interface (NEW)
+├── TagSelector.tsx             // Interactive tag selection with validation (NEW)
+├── DurationPicker.tsx          // Time duration input component (NEW)
 ├── RecurrenceSelector.tsx      // Future: recurring habit setup
-├── HabitTemplates.tsx          // Preset habit quick-creation
-└── FormValidation.tsx          // Real-time validation feedback
+├── HabitTemplates.tsx          // Preset habit quick-creation (NEW)
+└── FormValidation.tsx          // Real-time validation feedback (NEW)
 
 Habit Management
-├── HabitEditModal.tsx          // Edit existing habits
-├── HabitDeleteConfirm.tsx      // Confirmation dialog
-├── HabitQuickActions.tsx       // Mark complete, edit, delete
+├── HabitEditModal.tsx          // Edit existing habits (NEW)
+├── HabitDeleteConfirm.tsx      // Confirmation dialog (NEW)
+├── HabitQuickActions.tsx       // Mark complete, edit, delete (NEW)
+├── DataSourceIndicator.tsx     // Show if habit is AI-processed vs user-created (NEW)
 └── HabitBulkActions.tsx        // Future: bulk operations
 ```
 
@@ -137,17 +242,194 @@ Habit Management
 | **Date** | Valid date, not more than 1 year past | "Please select a valid date" |
 | **Participants** | Optional, comma-separated, max 200 chars | "Participants list too long" |
 
-### **Quick Templates:**
+### **Enhanced Tag Hierarchy System:**
+
+#### **🏷️ Primary Categories (Umbrellas) - Select 1+ Required:**
 ```
-Common Habit Templates
-├── 🏃 Exercise (30 min, health/exercise)
-├── 📚 Reading (45 min, self-care/learning)
-├── 🧘 Meditation (15 min, health/mindfulness)
-├── 🍳 Cooking (60 min, food/home-cooking)
-├── 💻 Learning (30 min, self-care/learning)
-├── 🚶 Walking (20 min, health/exercise)
-├── 💧 Hydration (1 min, health/nutrition)
-└── ✨ Custom (user-defined)
+├── 🏥 health          // Physical & mental wellness
+├── 🍽️ food           // Nutrition, cooking, dining
+├── 🏠 home           // Household, maintenance, organization
+├── 🚌 transportation  // Movement, travel, commuting
+├── 👥 social         // Interpersonal interactions
+├── 🎓 learning       // Knowledge acquisition, skill development
+├── 🎮 leisure        // Entertainment, hobbies, relaxation
+├── 💼 career         // Professional development, work-related
+├── 💰 financial      // Money management, spending patterns
+└── 🌱 personal       // Self-improvement, habits, routines
+```
+
+#### **🎯 Specific Activity Tags - Contextual Selection:**
+
+**Health & Wellness:**
+```
+├── exercise          // Active physical movement
+├── outdoor-activity  // Fresh air, nature-based activities
+├── mental-health     // Stress relief, emotional wellness
+├── nutrition         // Healthy eating choices
+├── sleep-hygiene     // Rest and recovery
+├── mindfulness       // Meditation, breathing, presence
+└── medical-care      // Healthcare appointments, prevention
+```
+
+**Social Interactions:**
+```
+├── friends           // Hanging out with friends
+├── family           // Time with family members
+├── romantic         // Partner/relationship activities
+├── networking       // Professional social connections
+├── community        // Neighborhood, volunteer activities
+├── group-activity   // Organized social events
+└── date-night       // Romantic outings
+```
+
+**Learning & Development:**
+```
+├── career-skills    // Professional development
+├── relationship-skills // Improving personal relationships
+├── hobby-learning   // New hobbies, creative skills
+├── academic         // Formal education, courses
+├── self-help        // Personal development books/content
+├── practical-skills // Life skills (cooking, repair, etc.)
+└── language         // Language learning
+```
+
+**Leisure & Entertainment:**
+```
+├── reading          // Books, articles, recreational reading
+├── entertainment    // Movies, shows, games
+├── hobbies          // Personal interests, crafts
+├── sports-watching  // Spectator sports
+├── cultural         // Museums, art, concerts
+├── gaming           // Video games, board games
+└── relaxation       // Downtime, rest activities
+```
+
+**Financial Behavior:**
+```
+├── cost-saving      // Choices that save money
+├── cost-spending    // Choices that cost more money
+├── investment       // Long-term financial planning
+├── budgeting        // Financial tracking, planning
+├── shopping         // Purchasing decisions
+└── financial-learning // Money management education
+```
+
+**Transportation Choices:**
+```
+├── public-transport // Bus, train, metro usage
+├── walking          // Walking as transportation
+├── cycling          // Bike for transportation
+├── driving          // Car usage
+├── rideshare        // Uber, Lyft, etc.
+└── delivery-pickup  // Delivery vs. pickup choices
+```
+
+#### **🎨 Context Tags - Multi-Select for Nuanced Tracking:**
+
+**Lifestyle Impact:**
+```
+├── health-positive   // Supports physical/mental health
+├── cost-effective    // Saves money or provides value
+├── time-efficient    // Efficient use of time
+├── social-bonding    // Strengthens relationships
+├── skill-building    // Develops new capabilities
+├── stress-relief     // Reduces stress, promotes relaxation
+├── goal-aligned      // Supports personal goals
+└── spontaneous       // Unplanned, flexible activities
+```
+
+**Social Context:**
+```
+├── solo             // Individual activity
+├── partner          // With romantic partner
+├── friends          // With friends
+├── family           // With family
+├── colleagues       // Work-related social
+├── group            // Larger group activity
+└── community        // Neighborhood/community involvement
+```
+
+**Location & Setting:**
+```
+├── home             // At home
+├── outdoors         // Outside, nature
+├── public-space     // Restaurants, bars, venues
+├── workplace        // Office, work environment
+├── transit          // While traveling/commuting
+├── online           // Digital/virtual activity
+└── local            // Within neighborhood/local area
+```
+
+### **🎯 Example Habit Tagging for Your Use Cases:**
+
+```
+1. "Reading relationship book"
+   Primary: [learning] 
+   Specific: [relationship-skills, self-help]
+   Context: [skill-building, goal-aligned, solo, home]
+
+2. "Reading career development book"  
+   Primary: [learning, career]
+   Specific: [career-skills, self-help]
+   Context: [skill-building, goal-aligned, solo]
+
+3. "Taking bus to hang with friends"
+   Primary: [social, transportation]
+   Specific: [friends, public-transport]  
+   Context: [social-bonding, cost-effective, local]
+
+4. "Hiking"
+   Primary: [health, leisure]
+   Specific: [exercise, outdoor-activity]
+   Context: [health-positive, stress-relief, outdoors]
+
+5. "Picnic with friends via bus"
+   Primary: [social, food, transportation]
+   Specific: [friends, group-activity, public-transport]
+   Context: [social-bonding, cost-effective, outdoors]
+
+6. "Driving for takeout vs delivery"
+   Primary: [food, transportation, financial]
+   Specific: [cost-saving, driving, delivery-pickup]
+   Context: [cost-effective, time-efficient]
+
+7. "Taking bus to bar with friends"
+   Primary: [social, transportation, leisure]
+   Specific: [friends, public-transport, entertainment]
+   Context: [social-bonding, cost-effective, public-space]
+```
+
+### **Enhanced Habit Templates:**
+```
+💰 Financial Wellness
+├── 🚌 Take public transport (save money) - [transportation, financial, public-transport, cost-effective]
+├── 🥡 Pickup vs delivery (save fees) - [food, financial, cost-saving, time-efficient] 
+├── 🏪 Shop local vs online (support community) - [financial, shopping, community, local]
+└── 📊 Review spending habits - [financial, budgeting, goal-aligned, home]
+
+👥 Social Connection  
+├── 📞 Call family member - [social, family, social-bonding, solo]
+├── 🍻 Happy hour with colleagues - [social, leisure, colleagues, public-space]
+├── 🎲 Game night with friends - [social, leisure, friends, group, home]
+└── 💑 Date night planning - [social, romantic, partner, social-bonding]
+
+🎓 Personal Development
+├── 📖 Read relationship book - [learning, relationship-skills, skill-building, solo]
+├── 💼 Professional skill course - [learning, career, career-skills, skill-building]
+├── 🍳 Learn new recipe - [learning, food, practical-skills, home]
+└── 🗣️ Practice language - [learning, language, skill-building, goal-aligned]
+
+🏃 Health & Wellness
+├── 🥾 Nature hike - [health, leisure, exercise, outdoor-activity, stress-relief]
+├── 🧘 Morning meditation - [health, personal, mindfulness, stress-relief, home]
+├── 🚶 Walking meeting - [health, career, exercise, outdoor-activity, work]
+└── 🥗 Meal prep Sunday - [health, food, nutrition, health-positive, home]
+
+🎮 Leisure & Balance
+├── 📚 Recreational reading - [leisure, learning, reading, relaxation, solo]
+├── 🎨 Creative hobby time - [leisure, personal, hobbies, skill-building, home]
+├── 🎬 Movie night (social) - [leisure, social, entertainment, friends, social-bonding]
+└── 🌅 Sunset walk - [leisure, health, outdoor-activity, relaxation, solo]
 ```
 
 ---
@@ -187,21 +469,69 @@ Common Habit Templates
 └─────────────────────────────────┘
 ```
 
-### **Tag Selection Interface:**
+### **Enhanced Tag Selection Interface:**
 ```
-Category Selection (Multi-select with validation)
+Comprehensive Tag Selection (Progressive Disclosure)
 ┌─────────────────────────────────┐
-│ Main Categories (select 1+) *   │
-│ ☑ health    ☐ food    ☐ home   │
-│ ☐ transportation               │
+│ Primary Categories (select 1+) *│
+│ ☑ 🎓 learning  ☐ 💰 financial  │
+│ ☐ 👥 social    ☐ 🚌 transport   │
+│ ☐ 🏥 health    ☐ 🎮 leisure     │
+│ ☐ 🍽️ food      ☐ 💼 career     │
+│ ☐ 🏠 home      ☐ 🌱 personal    │
+├─────────────────────────────────┤
+│ Specific Activity Tags          │
+│ (filtered by primary selection) │
+│ ☑ relationship-skills           │
+│ ☑ self-help                    │
+│ ☐ career-skills                │
+│ ☐ academic                     │
+│ ☐ practical-skills             │
+├─────────────────────────────────┤
+│ 🎯 Lifestyle Impact (optional)  │
+│ ☑ skill-building               │
+│ ☑ goal-aligned                 │
+│ ☐ health-positive              │
+│ ☐ cost-effective               │
+│ ☐ social-bonding               │
+│ ☐ stress-relief                │
+├─────────────────────────────────┤
+│ 👥 Social Context (optional)    │
+│ ☑ solo      ☐ partner         │
+│ ☐ friends   ☐ family           │
+│ ☐ colleagues ☐ group           │
+├─────────────────────────────────┤
+│ 📍 Location & Setting (optional)│
+│ ☑ home      ☐ outdoors        │
+│ ☐ public-space ☐ workplace     │
+│ ☐ transit   ☐ online           │
+└─────────────────────────────────┘
+
+Smart Tag Suggestions (based on combinations):
+┌─────────────────────────────────┐
+│ 💡 Suggested for this habit:    │
+│ [+ cost-effective] [+ local]    │
+│ [+ time-efficient]              │
+└─────────────────────────────────┘
+```
+
+### **Advanced Tag Analytics Preview:**
+Show users how their tags will create meaningful insights:
+```
+Analytics Preview (Real-time as user selects tags):
+┌─────────────────────────────────┐
+│ 📊 This habit will contribute to:│
 │                                 │
-│ Specific Tags (optional)        │
-│ ☑ exercise  ☐ nutrition        │
-│ ☐ mental-health                │
+│ 🎓 Learning Progress: +1        │
+│ 💰 Cost-Saving Choices: +1      │
+│ 👥 Social Connections: +1       │
+│ 🌱 Personal Growth Goals: +1    │
 │                                 │
-│ Context Tags (optional)         │
-│ ☐ self-care ☐ social          │
-│ ☐ mindfulness ☐ learning       │
+│ 📈 Weekly Insights:             │
+│ • Skills development tracking   │
+│ • Financial behavior patterns   │
+│ • Social activity balance       │
+│ • Transportation cost analysis  │
 └─────────────────────────────────┘
 ```
 
@@ -209,26 +539,30 @@ Category Selection (Multi-select with validation)
 
 ## 🔧 **Implementation Requirements**
 
-### **Phase 1: Basic CRUD (2-3 weeks)**
-- [ ] **Database Schema**: Extend existing table with user-created habit support
-- [ ] **Backend APIs**: Create habit CRUD endpoints with validation
-- [ ] **Frontend Form**: Basic habit creation form with tag selection
-- [ ] **Integration**: Ensure new habits appear in existing views
-- [ ] **Validation**: Implement tag hierarchy validation
+### **Phase 1: Dual-Source Foundation (2-3 weeks)**
+- [ ] **Database Schema**: Extend Supabase table to distinguish AI-processed vs user-created habits
+- [ ] **Backend APIs**: Implement missing CRUD endpoints (POST, PUT, DELETE /api/habits)
+- [ ] **Enhanced Tag System**: Migrate from 4-category to 10-category system in tag_validation.py
+- [ ] **Data Source Coordination**: Ensure n8n workflow and manual creation don't conflict
+- [ ] **Frontend Form**: Create habit creation UI leveraging existing design system
+- [x] **n8n AI Pipeline**: Fully operational with GPT-4o-mini + MCPs ✅
+- [x] **Validation Infrastructure**: Tag validation system already implemented ✅
 
 ### **Phase 2: Enhanced UX (1-2 weeks)**
 - [ ] **Templates**: Pre-defined habit templates for quick creation
+- [ ] **Analytics UI Enhancement**: Add filtering dropdowns to existing analytics (already identified as HIGH PRIORITY)
 - [ ] **Bulk Actions**: Edit/delete multiple habits
-- [ ] **Search & Filter**: Find habits by name, category, date
-- [ ] **Sorting Options**: Sort by date, name, category, duration
+- [x] **Search & Filter**: Server-side search and filtering already implemented in /api/tabs/habits ✅
+- [x] **Sorting Options**: Sort by date, name, category, duration already available ✅
 - [ ] **Quick Actions**: Mark complete, edit, duplicate from habit list
 
 ### **Phase 3: Advanced Features (2-3 weeks)**
+- [ ] **Lifestyle Analytics**: Implement comprehensive financial/social/learning insights dashboard
 - [ ] **Recurring Habits**: Daily/weekly/monthly habit scheduling
-- [ ] **Habit History**: View all instances of a habit over time
-- [ ] **Analytics Integration**: Include user habits in trend analysis
-- [ ] **Export/Import**: Backup and restore user-created habits
+- [ ] **Advanced Analytics**: Cross-category correlations and predictive insights
+- [x] **Data Export**: CSV/JSON export already planned as HIGH PRIORITY ✅
 - [ ] **Multi-user Support**: Prepare for user accounts and sharing
+- [ ] **Mobile Optimization**: Polish for React Native migration (already planned as MEDIUM PRIORITY)
 
 ---
 
@@ -262,6 +596,189 @@ Category Selection (Multi-select with validation)
 
 ---
 
+## 📊 **Lifestyle Analytics & Insights**
+
+### **🎯 Goal-Oriented Analytics Dashboard:**
+
+#### **💰 Financial Wellness Tracking:**
+```
+Financial Impact Analytics:
+┌─────────────────────────────────┐
+│ 💰 Monthly Financial Behavior   │
+├─────────────────────────────────┤
+│ 📈 Cost-Saving Choices: 85%     │
+│ ├── Public transport: 12 times  │
+│ ├── Pickup vs delivery: 8 times │
+│ ├── Local shopping: 5 times     │
+│ └── Home cooking: 18 meals      │
+│                                 │
+│ 📉 Cost-Spending Choices: 15%   │
+│ ├── Rideshare usage: 3 times    │
+│ ├── Delivery orders: 2 times    │
+│ └── Impulse purchases: 1 time   │
+│                                 │
+│ 💡 Insight: You saved ~$240     │
+│    this month through smart     │
+│    transportation choices!      │
+└─────────────────────────────────┘
+```
+
+#### **🏥 Health & Wellness Balance:**
+```
+Health Impact Analysis:
+┌─────────────────────────────────┐
+│ 🏥 Wellness Activity Distribution│
+├─────────────────────────────────┤
+│ 🏃 Physical Health: 65%         │
+│ ├── Outdoor activities: 8 times │
+│ ├── Exercise sessions: 12 times │
+│ └── Walking transport: 15 times │
+│                                 │
+│ 🧠 Mental Health: 35%           │
+│ ├── Stress relief: 10 times     │
+│ ├── Mindfulness: 8 times        │
+│ └── Social bonding: 18 times    │
+│                                 │
+│ 🎯 Goal Progress:               │
+│ Better health management: ✅    │
+│ Activity consistency: ✅        │
+│ Work-life balance: ⚠️ Needs attention
+└─────────────────────────────────┘
+```
+
+#### **👥 Social Connection Insights:**
+```
+Social Activity Patterns:
+┌─────────────────────────────────┐
+│ 👥 Social Interaction Analysis  │
+├─────────────────────────────────┤
+│ 🤝 Relationship Building:       │
+│ ├── Friends hangouts: 8 times   │
+│ ├── Family time: 6 times        │
+│ ├── Partner activities: 12 times│
+│ └── Community events: 2 times   │
+│                                 │
+│ 📍 Social Locations:            │
+│ ├── Home gatherings: 40%        │
+│ ├── Public spaces: 45%          │
+│ ├── Outdoor activities: 15%     │
+│                                 │
+│ 💡 Insight: You're maintaining  │
+│    strong social connections    │
+│    while keeping costs low!     │
+└─────────────────────────────────┘
+```
+
+#### **🎓 Learning & Personal Growth:**
+```
+Learning Progress Tracking:
+┌─────────────────────────────────┐
+│ 🎓 Knowledge & Skill Development │
+├─────────────────────────────────┤
+│ 📖 Reading Focus Areas:         │
+│ ├── Relationship skills: 45%    │
+│ ├── Career development: 35%     │
+│ ├── Practical skills: 20%       │
+│                                 │
+│ ⏱️ Learning Time Investment:    │
+│ ├── Daily average: 52 minutes   │
+│ ├── Weekly total: 6.1 hours     │
+│ ├── Monthly goal: ✅ 25+ hours  │
+│                                 │
+│ 🏆 Achievement Unlocked:        │
+│ "Consistent Learner" - 30 days  │
+│ of consecutive learning habits  │
+└─────────────────────────────────┘
+```
+
+### **🔄 Lifestyle Balance Scorecard:**
+```
+Monthly Lifestyle Assessment:
+┌─────────────────────────────────┐
+│ 🌟 Your Lifestyle Goals Score   │
+├─────────────────────────────────┤
+│ 💰 Financial Responsibility: A- │
+│ ├── Saving money: Excellent     │
+│ ├── Smart spending: Good        │
+│ └── Budgeting: Needs work       │
+│                                 │
+│ 🏥 Health Management: B+        │
+│ ├── Physical activity: Great    │
+│ ├── Mental wellness: Good       │
+│ └── Sleep hygiene: Improving    │
+│                                 │
+│ 🎓 Personal Enrichment: A       │
+│ ├── Learning consistency: Exc.  │
+│ ├── Skill diversity: Great      │
+│ └── Goal alignment: Perfect     │
+│                                 │
+│ 👥 Social Balance: A-           │
+│ ├── Relationship time: Great    │
+│ ├── Social variety: Good        │
+│ └── Community involvement: OK   │
+│                                 │
+│ 🎯 Overall Lifestyle: A-        │
+│ You're crushing your goals!     │
+└─────────────────────────────────┘
+```
+
+### **📈 Predictive Insights & Recommendations:**
+```
+Smart Suggestions Based on Patterns:
+┌─────────────────────────────────┐
+│ 🤖 AI-Powered Recommendations   │
+├─────────────────────────────────┤
+│ 💡 This Week's Suggestions:     │
+│                                 │
+│ 🚌 Transportation:              │
+│ "You took the bus 4x this week  │
+│  vs driving. Keep it up to save │
+│  $15 more this month!"          │
+│                                 │
+│ 📚 Learning:                    │
+│ "You've read 3 relationship     │
+│  books. Try a career book to    │
+│  balance your growth areas."    │
+│                                 │
+│ 👥 Social:                      │
+│ "It's been 5 days since your   │
+│  last friend hangout. Text      │
+│  someone to grab coffee!"       │
+│                                 │
+│ 🎯 Goal Alert:                  │
+│ "You're 85% to your monthly     │
+│  cost-saving goal. 3 more       │
+│  public transit trips = 100%!"  │
+└─────────────────────────────────┘
+```
+
+### **📊 Advanced Correlation Analysis:**
+```
+Cross-Category Insights:
+┌─────────────────────────────────┐
+│ 🔍 Pattern Recognition          │
+├─────────────────────────────────┤
+│ When you take public transport  │
+│ for social activities:          │
+│ ├── Save average $12 per trip   │
+│ ├── Walk 2x more than driving   │
+│ ├── Arrive 15% more relaxed     │
+│ └── Social time increases 20%   │
+│                                 │
+│ Learning + Social combinations: │
+│ ├── Book clubs: Best retention  │
+│ ├── Study groups: High motivation│
+│ ├── Teaching others: Skill boost│
+│                                 │
+│ 🎯 Optimization Suggestion:     │
+│ "Combine learning with social   │
+│  activities 2x/week to maximize │
+│  both goals simultaneously!"    │
+└─────────────────────────────────┘
+```
+
+---
+
 ## 📊 **Data Flow & Validation**
 
 ### **Habit Creation Flow:**
@@ -273,30 +790,131 @@ Form Data → Tag Validation → Supabase Insert → Success Response
 Real-time → Error Messages → Error Handling → UI Update
 ```
 
-### **Tag Validation Logic:**
+### **Enhanced Tag Validation Logic:**
 ```typescript
-interface HabitValidation {
+interface EnhancedHabitValidation {
   name: {
     required: true,
     minLength: 3,
     maxLength: 100,
     pattern: /^[a-zA-Z0-9\s\-\']+$/  // No special chars except - and '
   },
-  categories: {
+  
+  // Primary Categories (Umbrellas) - Required
+  primaryCategories: {
     required: true,
-    minUmbrellaCategories: 1,
-    validTags: APPROVED_TAGS,
-    maxCategories: 10
+    minSelection: 1,
+    maxSelection: 3,  // Prevent over-categorization
+    validOptions: [
+      'health', 'food', 'home', 'transportation',
+      'social', 'learning', 'leisure', 'career', 
+      'financial', 'personal'
+    ]
   },
+  
+  // Specific Activity Tags - Contextual
+  specificTags: {
+    required: false,
+    maxSelection: 5,
+    filteredByPrimary: true,  // Only show relevant options
+    validTags: {
+      health: ['exercise', 'outdoor-activity', 'mental-health', 'nutrition', 'sleep-hygiene', 'mindfulness', 'medical-care'],
+      social: ['friends', 'family', 'romantic', 'networking', 'community', 'group-activity', 'date-night'],
+      learning: ['career-skills', 'relationship-skills', 'hobby-learning', 'academic', 'self-help', 'practical-skills', 'language'],
+      leisure: ['reading', 'entertainment', 'hobbies', 'sports-watching', 'cultural', 'gaming', 'relaxation'],
+      financial: ['cost-saving', 'cost-spending', 'investment', 'budgeting', 'shopping', 'financial-learning'],
+      transportation: ['public-transport', 'walking', 'cycling', 'driving', 'rideshare', 'delivery-pickup'],
+      food: ['nutrition', 'home-cooking', 'dining-out', 'meal-prep', 'grocery-shopping'],
+      career: ['skill-development', 'networking', 'professional-growth', 'job-search', 'workplace-wellness'],
+      home: ['organization', 'maintenance', 'cleaning', 'decorating', 'gardening'],
+      personal: ['self-care', 'goal-setting', 'reflection', 'habits', 'productivity']
+    }
+  },
+  
+  // Lifestyle Impact Tags - Optional
+  lifestyleImpact: {
+    required: false,
+    maxSelection: 4,
+    validOptions: [
+      'health-positive', 'cost-effective', 'time-efficient',
+      'social-bonding', 'skill-building', 'stress-relief',
+      'goal-aligned', 'spontaneous'
+    ]
+  },
+  
+  // Social Context - Optional
+  socialContext: {
+    required: false,
+    maxSelection: 2,
+    validOptions: [
+      'solo', 'partner', 'friends', 'family', 
+      'colleagues', 'group', 'community'
+    ]
+  },
+  
+  // Location & Setting - Optional
+  locationSetting: {
+    required: false,
+    maxSelection: 2,
+    validOptions: [
+      'home', 'outdoors', 'public-space', 'workplace',
+      'transit', 'online', 'local'
+    ]
+  },
+  
   duration: {
     min: 1,
     max: 1440,  // 24 hours
-    default: 30
+    default: 30,
+    suggestions: [15, 30, 45, 60, 90, 120]  // Quick-select options
   },
+  
   date: {
     required: true,
     notFuture: true,
     maxPastDays: 365
+  },
+  
+  // Smart validation rules
+  smartValidation: {
+    // Suggest complementary tags based on selections
+    autoSuggest: true,
+    
+    // Warn about conflicting combinations
+    conflictDetection: {
+      'cost-saving + cost-spending': 'These tags contradict each other',
+      'solo + group': 'Choose either solo or group social context',
+      'home + outdoors': 'Select primary location'
+    },
+    
+    // Encourage balanced lifestyle tracking
+    balancePrompts: {
+      financialOnly: 'Consider adding health or social tags for balance',
+      workOnly: 'Add leisure or personal time for work-life balance',
+      soloOnly: 'Mix in some social activities for connection'
+    }
+  }
+}
+
+// Analytics-driven tag suggestions
+interface SmartTagSuggestions {
+  basedOnHistory: {
+    // "You often combine 'friends' with 'cost-effective'"
+    frequentCombinations: string[],
+    
+    // "You haven't tracked financial habits this week"
+    missingCategories: string[],
+    
+    // "Your last 5 social activities were all 'public-space'"
+    varietySuggestions: string[]
+  },
+  
+  basedOnGoals: {
+    // If user has financial goals, suggest cost-saving tags
+    goalAlignment: string[],
+    
+    // Based on lifestyle balance scorecard
+    needsImprovement: string[]
   }
 }
 ```
@@ -370,11 +988,12 @@ interface HabitValidation {
 ## ✅ **Acceptance Criteria**
 
 ### **MVP Requirements:**
-- [ ] **Create Habits**: Users can create habits with name, categories, duration
-- [ ] **Tag Validation**: Real-time validation following existing tag hierarchy
-- [ ] **Integration**: New habits appear in All Habits and Analytics views
-- [ ] **Edit/Delete**: Users can modify or remove habits they created
-- [ ] **Data Persistence**: Habits saved to Supabase and survive app restarts
+- [ ] **Create Habits**: Users can create habits with name, enhanced categories, duration
+- [x] **Tag Validation**: Backend validation infrastructure exists, needs frontend integration ✅
+- [x] **Integration**: Existing /api/tabs/* endpoints ready for user-created habits ✅
+- [ ] **Edit/Delete**: Implement missing CRUD endpoints and UI
+- [x] **Data Persistence**: Supabase infrastructure ready, needs schema extension ✅
+- [ ] **Enhanced Tag System**: Upgrade from 4 to 10 lifestyle categories
 
 ### **Quality Gates:**
 - [ ] **Form Validation**: All edge cases handled with clear error messages
@@ -392,14 +1011,50 @@ interface HabitValidation {
 
 ---
 
+## 🚨 **Current System Migration Requirements**
+
+### **Tag System Upgrade Priority:**
+The existing tag validation system (`backend/utils/tag_validation.py`) currently supports only:
+- **4 umbrella categories**: health, food, home, transportation
+- **Basic specific tags**: ~15 total approved tags
+- **Limited contextual tags**: cost-saving, restock
+
+**CRITICAL NEED**: Expand to 10 lifestyle categories with ~60+ tags to support comprehensive lifestyle tracking goals.
+
+### **Database Migration Strategy:**
+```sql
+-- Current: categories column as varchar[]
+-- Future: Enhanced categories + new tags JSONB column
+-- Migration: Preserve existing data while adding new structure
+```
+
+### **Backend Integration Points:**
+- **✅ READY**: Supabase connection, FastAPI endpoints, tag validation infrastructure, n8n AI workflow
+- **❌ MISSING**: Manual CRUD endpoints (POST/PUT/DELETE), enhanced tag definitions
+- **⚠️ NEEDS UPDATE**: Analytics to support new lifestyle categories, dual-source data handling
+
+### **n8n Workflow Integration:**
+- **✅ OPERATIONAL**: GPT-4o-mini agent with Google Calendar MCP + Supabase MCP
+- **✅ AI PROCESSING**: Automated tagging and categorization of calendar events
+- **⚠️ COORDINATION NEEDED**: Prevent conflicts between AI-created and user-created habits
+- **⚠️ TAG SYSTEM**: Update AI prompt to use new 10-category system
+
+### **Frontend Development Priority:**
+- **✅ READY**: Dark mode design system, tab-specific data flow, server-side filtering
+- **❌ MISSING**: Manual habit creation UI, enhanced tag selection interface, data source indicators
+- **⚠️ NEEDS UPDATE**: Analytics filtering (HIGH PRIORITY), distinguish AI vs user habits in UI
+
+---
+
 ## 🎯 **Next Steps**
 
-1. **Technical Design**: Create detailed technical specifications for database changes
-2. **UI Mockups**: Design creation form and integration points
-3. **API Specification**: Define exact request/response formats
-4. **Testing Strategy**: Plan unit, integration, and user acceptance tests
-5. **Migration Plan**: Strategy for deploying database schema changes
-6. **User Research**: Validate assumptions about desired creation workflow
+1. **Tag System Migration**: Update `backend/utils/tag_validation.py` with 10-category system
+2. **n8n Workflow Update**: Modify AI prompt to use new comprehensive tag categories  
+3. **Database Schema**: Add columns to distinguish AI vs manual habits in existing Supabase table
+4. **Dual-Source CRUD**: Implement POST/PUT/DELETE /api/habits endpoints with source tracking
+5. **Frontend Creation UI**: Build manual habit creation form using existing design patterns
+6. **Data Source Coordination**: Ensure AI workflow and manual creation complement each other
+7. **Analytics Enhancement**: Add lifestyle insights supporting both AI and manual habits
 
 ---
 
