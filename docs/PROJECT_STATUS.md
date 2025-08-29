@@ -53,6 +53,7 @@
 - **Google Calendar Integration**: Complete OAuth setup and timezone-aware event display → **PR #14**: Implemented Google Calendar OAuth flow, specific calendar targeting, timezone conversion, and frontend integration for "Planned for Today" section (Aug 27, 2024)
 - **Product Requirements Documentation**: Added comprehensive PRDs for strategic planning → **PR #18**: Created detailed PRDs for habit creation/management and mobile app deployment with technical specifications, implementation phases, and success metrics (Jan 22, 2025)
 - **LLM Context System**: Need for consistent LLM knowledge when switching models → **PR #20**: Created cursor.json with comprehensive project memories, workflows, and context for any LLM working on the project, plus updated README.md with LLM guidance section (Jan 22, 2025)
+- **Habit Creation PRD Enhancement**: Need comprehensive PRD reflecting current n8n AI workflow and dual-source architecture → **PR #21**: Updated HABIT_CREATION_PRD.md with n8n workflow documentation, complete Supabase schema, enhanced 10-category tagging system, and realistic implementation phases for manual habit creation (Jan 22, 2025)
 
 ## 📋 **Current Priorities**
 
